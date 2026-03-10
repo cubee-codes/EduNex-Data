@@ -1,0 +1,4090 @@
+Unit 1 : Operating System services and components
+
+1.1 Operating System: concept, functions :-
+       An operating system i s a program that controls the
+execution of application programs and acts as a n
+interface between the user of a computer and the
+computer hardware.
+
+What are the functions of OS?
+• Operating system performs three functions :
+1 . Convenience: An OS makes a computer
+more convenient to use.
+2. Efficiency: An OS allows the computer
+system resources to be used in an efficient
+manner.
+3. Ability to evolve : An OS should be
+constructed in such a way as to permit the
+effective development, testing and
+introduction of new system functions
+without at the same time interfering with
+service.
+
+Components of Computer System
+• Computer system consists of hardware device and
+software that are combined to provide a tool to user
+for solving problems.
+• Fig. 1.2.1 shows modern computer system.
+• Modern computer consists of one or two CPU with
+main memory and various 1/O devices. Common
+bus is used for communication between these
+
+devices. Each device has its own device controller.
+• CPU and device controller uses memory cycle for
+execution purposes. But memory cycle is only
+available to one device at a time.
+• Bootstrap program is loaded when user start the
+computer. It initializes all the device connected to the
+computer system and then loads required device
+drivers.
+• After this, operating system loads in the computer
+system. In UNIX OS, an 'init' is the first process
+which execute by OS.
+• Interrupt is software and hardware. It is used to
+send signal to CPU. Software interrupt is sometime
+called system call.
+• When interrupt is trigger, the CPU stops executing
+the instruction and control is transfer to the fixed
+location. Starting address is stored at fixed location
+where the service routine executes.
+• Interrupts do not alter the control flow of the
+process executing on the processor.
+Storage structure
+
+Storage structure
+• Processor access the data from main memory before
+executing any instruction. Main memory is also
+
+called Random Access Memory (RAM).
+• DRAM is used in main memory. Fig. 1.2.2 shows
+hierarchy of storage device.
+• At the top of the hierarchy, we have storage on the
+CPU registers. For accessing the CPU, it is fastest
+form o f storage.
+• Cache memory capacity i s less than 1 MB.
+
+
+User program and data are stored in the main
+memory. Main memory is volatile, so it can not
+stored permanently.
+Storage system is classified as temporary storage or permanent storage.
+Top level storage devices are low capacity with faster CPU access and bottom level storage devices having very large capacity with slow CPU access speed.
+I/O structure
+Every device uses a device controller to connect it to the computer's address and data bus. Devices can be classified as a block oriented or character oriented, depending on the number of bytes transferred on an individual operation.
+Storage devices are used to store data while the computer is off.
+All the I/O devices are connected to each other by using common bus. CPU and main memory is also connected with this bus.
+Various types of controller is used in the computer system. Small Computer System Interface (SCSI) controller can handle up to seven devices. Each device controller have its own buffer
+ Device controller manage the data transfer between
+peripheral device and its controller. Device driver is
+handled b y device controller.
+
+I/O operation steps
+1. Device driver loads the registers within the
+device controller.
+2. Device controller takes action according to the
+data loaded into the register.
+3 . Data i s transfer from device to its local buffer
+with the help of device controller.
+4. After completion of data transfer, the device
+controller sends an interrupt signal to device
+driver about data transfer completion operation.
+5 . Then control goes to operating system.
+• The device driver is the operating system entity that
+controls CPU-/O parallelism. The software that
+communicates with device controller is called device
+driver.
+• A device can b e started by the device driver, and
+the application program can continue operation in
+parallel with the device operation. 
+
+1.2 Different types of Operating System: Batch Operating System, Multi-programmed, Time Shared Operating System, Multiprocessor System, Distributed System, Real Time System, Mobile OS (Android OS)
+
+Batch Operating System
+• Batch system process a collection of jobs, called a
+batch. Batch is a sequence o f user jobs.
+• Job is a predefined sequence of commands,
+programs and data that are combined into a single
+unit.
+• Each job in the batch is independent of other jobs in
+the batch. A user can define a job control
+specification by constructing a file with a sequence
+o f commands.
+•Jobs with similar needs were batched together to
+speed up processing. Card readers and tape drives
+are the input device in batch systems. Output
+devices are tape drives, card punches and line
+printers.
+• Primary function of the batch system is to service
+the jobs in a batch one after another without
+requiring the operator's intervention. There is no
+need for human/user interaction with the job when
+it runs, since all the information required to
+complete job is kept i n files.
+Some computer systems only did one thing at a
+time. They had a list of instructions to carry out
+and these would be carried out one after the other.
+This is called a serial system. The mechanics of
+development and preparation of programs in such
+environments are quite slow and numerous manual
+operations involved in the process.
+• Batch monitor is used to implement batch
+Processing system. Batch monitor is also called
+kernel. Kernel resides in one part of the computer
+main memory.
+• The memory allocator managed the main memory
+space. Batch monitor controls the sequence of
+events. Main memory store the batch monitor and
+users program and data (jobs). Fig. 1.5.1 shows
+memory layout for a batch system.
+
+Computer operator gives a command to start the
+processing of a batch, the kernel sets up the
+processing of the first job, Job was selected from the
+job queue and loaded into main memory. When a
+job completed execution, i ts memory was released
+and the output for the job was copied
+• When a job is completed, it returns control to the
+monitor, which immediately reads in the next job.
+• Fig. 1.5.2 shows concept o f batch system.
+• Scheduling is also simple in batch system. Jobs are
+processed in the order o f submission ie. first come
+first served fashion.
+• When a job completes execution, its memory is
+released and the output for the job gets copied into
+a n output spool for later printing.
+
+Spooling
+• Spooling an acronym for simultaneous peripheral
+operation on line. Spooling uses the disk a s a large
+buffer for outputting data to printers and other
+devices. It can also be used for input, but is
+generally used for output.
+• Its main use is to prevent two users from
+alternating printing lines to the line printer on the
+
+
+same page, getting their output completely mixed
+together. It also helps in reducing idle time and
+overlapped 1/0 and CPU.
+• Batch system often provides simple forms of file
+management. Access to file is serial. Batch systems
+d o not require any time critical device management.
+• Batch systems are inconvenient for users because
+users cannot interact with their jobs to fix problems.
+There may also be long turnaround times. Example
+of this system is generating monthly bank
+statement.
+• An optimization used to minimize the discrepancy
+between CPU and I/O speeds is spooling. It
+overlaps of one job with computation o f other job.
+• The spooler for instance could be reading the input
+of one job while printing the output of different
+job.
+• Spooling refers to putting jobs in a buffer, a special
+area in memory or on a disk where a device can
+access them when it is ready.
+• Spooling is useful because device access data at
+different rates. The buffer provides a waiting station
+where data can rest while the slower device catches
+up.
+• Computer can perform /O in parallel with
+computation, it becomes possible to have the
+computer read a deck of cards to a tape, drum or
+disk and to write out to a tape printer while it was
+computing. This process i s called spooling.
+• The most common spooling application is print
+spooling.
+• Spooling batch system were the first and are the
+simplest o f the multiprogramming systems.
+
+Advantages o f spooling
+1. The spooling operation uses a disk as a very
+large buffer.
+2. Spooling is however capable of overlapping 1/0
+operation for one job with processor operations
+for another job.
+
+Advantages of batch system
+1. Move much of the work of the operator to the
+computer.
+ 2. Increased performance since it was possible for
+job to start as soon a s the previous job finished.
+
+Disadvantages of batch system
+1. Turn around time can be large from user
+standpoint.
+2. Program debugging i s difficult.
+3. There was possibility o f entering jobs i n infinite
+loop.
+4. A job could corrupt the monitor, thus affecting
+pending jobs.
+5. Due to lack of protection scheme, one batch job
+can affect pending jobs.
+
+Multiprogrammed O S
+• CPU remains idle in batch system. At any time
+either CPU or I/O device was idle in batch system.
+To keep CPU busy, more than one program/job
+must b e loaded for execution. It increases the CPU
+utilizations. So multiprogramming increases the
+CPU utilization.
+• Resource management is the main aim of
+multiprogramming operating system. File system,
+command processor, /0 control system and
+transient area are the essential components of a
+single user operating system. Multiprogramming
+operating system divides the transient area to store
+the multiple programs and provides resource
+management to the operating system.
+• The concurrent execution of programs improves the
+utilization of system resources. A program in
+execution i s called a "Process", "Job" o r a "Task".
+• When two or more programs are in the memory at
+the same time, sharing the processor is referred to
+the multiprogramming operating system.
+• Fig. 1.5.3 shows
+the memory layout for a
+multiprogramming operating system.
+• Operating system keeps number of programs into
+the memory. It selects one program from the
+memory and executes it. All the programs that enter
+the system are kept in the job pool.
+• Job pool consists of all processes residing o n disk
+and waiting to allocate primary memory. Job
+scheduling concept is used if there is no space for
+process in the primary memory.
+
+Memory management is also required to manag
+h e memory for process. CPU scheduling is applier
+for selecting process from memory.
+• When computer loads more than one program in t o
+the memory, CPU executes one program and I/O
+system is busy with other programs.
+• Multiprogramming operating system do not provide
+user interaction with the program.
+• Fig. 1.5.4 Shows working of multiprogramming OS.
+• In multiprogramming operating system, programs
+are competing for resources. A function of the
+multiprogramming operating system is CPU
+scheduling. memory management and I/O
+management.
+suppose there are four programs for execution. All
+four programs are loaded into the memory. CPU
+select first program for execution. Normally
+programs contain instruction for CPU and I/O
+operation.
+• CPU bound instructions: c = a + b
+• 1/O bound instructions: printf, scanf etc.
+• When any I/O instruction is encounter in the
+program, CPU select next program for processing.
+CPU select second program for execution and /O
+system select first program for performing 1/0
+operation. Multiprogramming operating system
+monitors the state of all active programs and system
+resources.
+
+Advantages:
+1. CPU utilization is high.
+2. It increases the degree of multiprogramming.
+Disadvantages:
+1. CPU scheduling i s required.
+2. Memory management is also required.
+
+Time Shared OS
+• Time sharing is also called multitasking operating
+system. It is logical extension of the
+multiprogramming operating systems.
+• User interaction with program is possible in time
+sharing operating system. During execution of the
+
+
+program, user interacts directly with the program,
+supplying information to the program.
+• Multi-tasking means that the computer can work
+with more than one program at a time. For
+example, user could b e working with information
+from one database on the screen analyzing data,
+while the computer is sorting information from
+another database, while a excel sheet is performing
+calculations on a separate worksheet.
+• Many users share
+the computer system
+simultaneously in time sharing operating system.
+Time sharing system uses multiprogramming and
+CPU scheduling. Each user has at least one separate
+program in memory.
+• In time sharing system, each user is given a time
+slice for executing his/her job in round robin
+fashion. Job continues until the time slice ends.
+• Fig. 1.5.shows multitasking OS.
+
+ Concept of virtual machine is used in time sharing
+system. It creates virtual machine one per user.
+User interaction with system by using virtual
+machine. User enters the command for virtual
+machine and result will received back to user.
+• Time sharing system is more complex than
+multiprogramming operating system. It also takes
+help of file system. File system is stored on the disk
+so disk management is also required.
+• Major problem with time sharing system is
+protection and security of data.
+• Time sharing system uses medium term scheduling
+such a s round robin for the foreground. Background
+process uses can use a different scheduling method.
+Difference between multiprogramming and
+multitasking operating system is context switching.
+In multiprogramming system a context switching
+occurs only when the currently executing process
+stalls for some reasons. Time sharing system gives
+each user the impression that the entire system is
+dedicated to his use. Context switching simply
+allows several applications t o be open, but only one
+is working at a time.
+• Truly speaking, even in true multi-tasking, only one
+application program is ever running at anyone
+instant.
+Because
+the computer automatically
+switches from one program t o the next program so
+quickly, all the programs seem to run
+simultaneously.
+
+Multiprocessor OS
+• Multiprocessor system means more than one
+processor in close communication. All the processor
+share common bus, clock, memory and peripheral
+devices.
+• Multiprocessor system is also called parallel system
+or tightly coupled systems. Multiprocessor operating
+systems are just regular operating systems. They
+handle system calls, do memory management,
+provide a file system, and manage 1/O devices.
+• Multiprocessor systems is also known as parallel
+systems or multicore systems.
+• Features of Multiprocessor Systems :
+1. The processor should support efficient
+context switching operation.
+2. It supports large physical address space and
+larger virtual address space.
+3. If one processor fails, then other processors
+should retrieve the interrupted process state
+s o that execution of the process can continue.
+4. The inter-process communication mechanism
+should b e provided and implemented in
+hardware a s it becomes efficient and easy.
+Multiprocessors can be used in different ways :
+1. Uniprossesors (single-instruction, single-data
+or SISD)
+2. Within a single system to execute multiple,
+independent sequences of instructions in
+multiple contexts (multiple-instruction,
+multiple-data or MIMD);
+3. A single sequence of instructions in multiple
+contexts (single-instruction, multiple-data or
+SIMD, often used in vector processing);
+4. Multiple sequences o f instructions in a single
+context (multiple-instruction, single-data or
+MISD, used for redundancy in fail-safe
+systems and sometimes applied to describe
+pipelined processors or hyper threading).
+Advantages and Disadvantages
+of Multiprocessor Systems
+• Advantages of Multiprocessor Systems :
+1 . Throughput : Throughput increases because
+number of processor is increases.
+2. Cost: Multiprocessor system is cheaper than the
+multiple single processor system.
+3. Reliability: If one processor fails, it has no effect
+on whole system operation.
+4. Response time : Response time is less because of
+increased number of processor
+• Disadvantages of Multiprocessor Systems
+1. Multiprocessor systems are more complex in both
+hardware and software.
+2. Additional CPU cycles are required to manage
+the cooperation, so per-CPU efficiency goes
+down.
+• Multiprocessor systems are of two types: symmetric
+multiprocessing and asymmetric multiprocessing.
+
+Symmetric Multiprocessing
+• The simplest multiprocessors are based on a single
+bus. In symmetric multiprocessing, number
+homogeneous processor are running independently
+without affecting other programs.
+• Systems that treat all CPUs equally are called
+symmetric multiprocessing (SMP) systems.
+• Each processor uses different data and program but
+sharing some common resources like memory, 1/0
+device etc. Fig. 1.6.1 shows
+symmetric
+multiprogramming system.
+• In SMP, all processor are at the same level. They
+work in peers. There is no master-slave relationship
+i n between the processor. Each processor shares a
+single copy of operating system.
+
+Symmetric multiprocessing is easier to implement in
+operating systems. Examples of symmetric
+multiprocessing operating systems are Windows NT
+4.0, Novell Netware 2.1 etc.
+
+symmetric Multiprocessor
+• If all CPUs are not equal, system resources may be
+divided in a number of ways, including asymmetric
+multiprocessing (ASMP), non-uniform memory
+access (NUMA) multiprocessing, and clustered
+multiprocessing.
+• All CPUs are not equal. There is one master
+processor and remaining is the slave processor.
+Each processor has its own memory address space.
+• A master processor controls the whole operations. It
+gives the instruction to the slave processor or slave
+processor uses some predefined set of tasks.
+• Asymmetric multiprocessing has one master CPU
+and the remainder CPUs are slaves. The Master
+distributes takes among the slaves and I/O is
+usually done by the master only.
+• Each processor has own task which assign by
+master processor. Asymmetric multiprocessing is
+difficult to implement.
+
+Distributed OS
+• Definition: A distributed system is a collection of
+autonomous hosts that are connected through a
+computer network.
+• A distributed system is a collection of independent
+computers that appears to its users as a single
+coherent system. Each host executes components
+and operates a distribution middleware.
+• Middleware enables the components to coordinate
+their activities. Users perceive the system as a
+single, integrated computing facility.
+• A distributed computer system consists of multiple
+software components that are on multiple
+computers, but run as a single system. The
+computers that are in a distributed system can be
+physically close together and connected by a local
+network, or they can be geographically distant and
+connected by a wide area network.
+A distributed system can consist of any number of
+possible configurations, such as
+mainframes,
+personal computers, workstations, minicomputers
+and so on.
+• Distributed operating systems
+depend
+on
+networking for their operation. Distributed O S runs
+on and controls the resources of multiple machines.
+It provides resource sharing across the boundaries
+of a single computer system. It looks to users like a
+single machine OS.
+• Distributing OS owns the whole network and makes
+it look like a virtual uni-processor or may be a
+virtual multiprocessor.
+• Definition : A distributed operating system is one
+that looks to its users like an ordinary operating
+system but runs on multiple, independent CPU.
+• Distributed systems depend on networking for their
+functionality. Fig. 1.7.1 shows the distributed
+system.
+• Examples of distributed operating system are
+Amoeba, chrous, mach and v-system
+• A Local Area Network (LAN) is a network that is
+confined to a relatively smail area. It is generally
+limited to a geographic area such as a college, lab
+or building.
+• WAN provides long distance transmission of data
+and voice. Computers connected to a wide-area
+network are often connected through public
+networks, such as the telephone system. They can
+also be connected through leased lines or satellites.
+• A MAN typically covers an area of between 5 and
+5 0 km diameter. Many MANs cover an area the size
+of a city, although in some cases MANs may be as
+small as a group of buildings.
+
+
+ A MAN often acts a s a high speed network to allow
+sharing of regional resources. MAN provides the
+transfer rates from 3 4 t o 150 Mbps.
+
+Advantages of distributed OS :
+1. Resource sharing : Sharing of software resources
+such a s software libraries, database and hardware
+resources such
+as hard disks, printers and
+CDROM can also be done in a very effective way
+among all the computers and the users.
+2. Higher reliability: Reliability refers to the
+degree of tolerance against errors and component
+failures. Availability is one of the important
+aspects of reliability. Availability refers to the
+fraction of time for which a system is available
+for use.
+3. Better price performance ratio: Reduction in the
+price of microprocessor and increasing
+computing power gives good price-performance
+ratio.
+4. Shorter responses times and higher throughput.
+5. Incremental growth : To extend power and
+functionality of a system by simply adding
+additional resources to the system
+
+Difficulties in distributed OS are
+1. There are no current commercially successful
+examples.
+2. Protocol overhead can dominate computation
+costs.
+3. Hard to build well.
+4. Probably impossible to build at the scale of the
+internet.
+
+Real Time Systems
+Time constraints is the key parameter is real time systems. It controls autonomous system such as robots, satellites, air traffic control and hydroelectric dams.
+When user gives an input to the system, it must process within the time limit and result is sent back. Real time system fails if it does not give result within the time limits.
+Real time systems are of two types: Hard real time and soft real time.
+Critical task is completed within the time limit in hard real time system. All the delay in the system is fixed and time bounded. Existing general purpose operating system does not support the hard real time system functions. Real time task cannot keep waiting for longer time without allocating kernel
+Soft real time system is less restrictive type. Soft
+real time cannot guarantee that it will be able t o
+meet deadline under all condition. Example of soft
+real time system is digital telephone and digital
+audio.
+• Real time operating system uses priority scheduling
+algorithm to meet the response requirement of a
+real time application. General real time applications
+with their example are listed below:
+1. Transportation: Air traffic control and traffic
+light system
+2 . Communication : Digital telephone
+3. Process control: Petroleum and paper mill
+4. Detection : Burglar system and radar system
+5. Flight simulation : Auto pilot shuttle mission
+simulator.
+• Memory management in real time system is less
+demanding than i n other type o f multiprogramming
+operating systems. Time critical device management
+is one of the main characteristics of the real time
+systems.
+
+Mobile OS
+Andriod
+• Android is an open source mobile O S developed by
+the Open Handset Alliance led by Google.
+• Android is a software stack for mobile devices that
+includes an operating system, middleware and key
+applications.
+• It is based o n Linux 2.6 kernel.
+ndroid is an open source operating system,
+created by Google specifically for use on mobile
+devices (ie. cell phones and tablets)
+• It can be programmed in C/C+ but most app
+development is done in Java. It supports Bluetooth,
+Wi-Fi and 3 G and 4 G networking.
+Android Architecture
+• Fig. 1.9.1 shows Android software stack. Each layer
+of the stack and the corresponding elements within
+each layer are tightly integrated and carefully tuned
+to provide the optimal application development and
+execution environment for mobile devices.
+• Android provides a set of core applications :
+1. Email client
+2. SMS program
+3. Calendar
+4. Maps
+5. Browser
+6. Contacts
+
+ll applications are written using the Java language.
+App framework
+• Used for enabling and simplifying the reuse of
+components
+1. Developers have full access to the same
+framework APIs used by the core
+applications.
+2. Users are allowed to replace components.
+• App Framework features are a s follows :
+
+Libraries
+• Libraries include a set of C/C++ libraries used by
+components of the Android system. It is exposed t o
+developers through the Android application
+framework
+Runtime
+• Android run-time system provides core set of class
+libraries to ensure smooth platform for developers.
+With these libraries developers can easily import
+required libraries into their applicatio
+Dalvik virtual machine
+• Dalvik is a purpose built virtual machine designed
+specifically for android which was developed by
+Dan Bornstein and his team. Strictly it was
+developed for mobile devices. While developing
+Dalvik Virtual Machine Dan Bornstein and his team
+realize the constraints specific to mobile
+environment which is not going to change in future
+at least, like battery life, processing power and many
+more. So they optimized the dalvik virtual machine.
+Dalvik virtual machine uses register based
+architecture. With this architecture dalvik virtual
+machine has few advantages over java virtual
+machine such a s :
+1 . Dalvik uses its own 1 6 bit instruction set than
+java 8 bit stack instructions, which reduce
+the dalvik instruction count and raised its
+interpreter speed.
+2. Dalvik use less space, which means an
+uncompressed dex file i s smaller in size(few
+bytes) than compressed java archive file(jar
+file).
+• An open source software stack that includes
+operating system. Linux operating system kernel
+that provides low level interface with the hardware,
+memory management and process control.
+Middleware: A run time to execute Android
+applications including virtual machine and core
+libraries.
+Important blocks in Android :
+1. Activity manager: Manages the activity life cycle
+of applications
+2. Content providers: Manage the data sharing
+between applications
+3. Telephony manager : Manages all voice calls.
+We use telephony manager if we want to access
+voice calls in our application.
+4. Location manager : Location management, using
+GPS or cell tower
+5. Resource manager: Manage the various types of
+resources we use in our application
+Android SDK features
+The Android SDK includes
+1 . The Android APls.
+2. The core of the SDK.
+3. Development tools.
+4 . No licensing, distributions, or development fees
+o r release approval processes.
+5. GSM, EDGE, and 3G networks for telephony and
+data transfer.
+6. Full multimedia hardware control.
+7 . APIs for using sensor hardware including
+accelerometer and the compass.
+8. APls for location based services
+Application framework
+1. Android offers developers the ability to build
+rich and innovative applications.
+2. Developers have full access to the same
+framework APls used by the core applications.
+3. Underlying all applications is a set of services,
+including Views.
+4. I t can be used to build a n application, including
+lists, grids, text boxes, buttons, and even an
+embeddable web browser.
+Content providers enable applications to access data
+from other applications (such as Contacts), or to
+share their own data.
+• A resource manager provides access to non-code
+resources such as localized strings, graphics and
+layout files.
+• A notification manager enables all applications to
+display custom alerts in the status bar.
+• An activity manager manages the lifecycle of
+applications and provides a common navigation
+backstack.
+Libraries used in Android
+• A set of C/C++ libraries used by various
+components of the Android system.
+• System C library : Tuned for embedded
+Linux-based devices .
+• Media Libraries: Based on PacketVideo's
+OpenCORE; the libraries support playback and
+recording of many popular audio and video
+formats, a s well a s static image files.
+• Surface Manager: Manages access to the display
+subsystem and seamlessly composites 2D and 3 D
+graphic layers from multiple applications.
+• LibWebCore : A modern web browser engine which
+powers both the Android browser and an
+embeddable web view.
+• SGL/ 3D libraries : SL is underlying 2D graphics
+engine.
+• SQLite: A powerful and lightweight relational
+database engine available to all applications.
+Android run-time
+• Android includes a set of core libraries that most o f
+the functionality available in the core libraries o f the
+Java programming language.
+• Every Android app runs in its own process with its
+own instance of the Dalvik virtual machine. The
+Dalvik VM executes files in the Dalvik Executable
+(dex) format.
+Slow Android apps
+1. By default on Android, all work is done in a
+single thread, the "main application" thread. If a
+component of the work takes a long time, the
+rest o f the work will be "blocked". For example, a
+long time to access data across the network
+prevents responding t o any GUT events.
+2 . In the Android OS, if a GUI doesn't respond to
+an input event in five seconds, then it is
+considered unresponsive and the OS will try to
+kill it.
+Android thread design
+1. Only perform GUI actions on main application
+thread. Spawn separate threads to perform
+data-intensive or slow actions. Make these
+threads asynchronous.
+2. Main thread does not have to wait for/check on
+other threads. Instead, those threads run a s they
+need to and report back to the original thread.
+Any changes made to the Ul should go through
+the Ul thread.
+Android applications
+a. Android applications get distributed in a apk
+file. APK stands for "Android Package". It is
+simply a zip file that has a particular file
+structure. An APK contains:
+1. The Android Manifest file (an XML file with
+lots of metadata).
+2. A Resource bundle containing sounds,
+graphics, etc.
+3. The Dalvik classes that make up user
+application.
+Android Benefits
+1 . An open and free development platform. Handset
+makers can use it without royalty and customize
+to their hearts content.
+2. Component-based architecture : Lots of default
+components can be replaced straightforwardly.
+Proponents of Android point to the following
+benefits:
+a. Lots o f services : location, sql, maps, web, etc.
+b. Well managed applications; isolated from each
+other t o protect data and provide security;
+c. Operating system can quit programs a s needed
+to ensure good performance on mobile devices.
+d . Portability: To support a new device, a company
+has to port the virtual machine; Android apps
+(Dalvik) then execute on the new device with
+little to no modification.
+
+1.3 Command line based Operating System: DOS, UNIX GUI based Operating System: WINDOWS, LINUX, MaC OS
+
+Command Line based O S
+• The command line is also called the Windows
+command line, command screen, or text interface. It
+is a user interface that is navigated by typing
+commands at prompts, instead of using the mouse.
+• Unlike a GUI operating system, a command line
+only uses a keyboard to navigate by entering
+commands and does not utilize a mouse for
+navigating.
+• Command Prompt is a command line interpreter
+application available in most Windows operating
+systems. It's used to execute entered commands.
+• Most of those commands automate tasks via scripts
+and batch files, perform advanced administrative
+functions, and troubleshoot or solve certain kinds of
+Windows issues.
+
+DOS
+• Disk Operating System (DOS) is created by
+Microsoft : MS-DOS. MS-DOS is a disk operating
+system for IBM PC-compatible computers.
+• As with any other operating system, its function is
+t o oversee the operation of the system by providing
+support for executing programs, controlling I/O
+devices, handling errors, and providing the user
+• MS-DOS is a disk-based, single-user, single-task
+operating system. These qualities make it one of the
+easiest disk operating systems to understand.
+• The main portions of MS-DOS are the IO.SYS,
+MSDOS.SYS, and COMMAND.COM files.
+• IO.SYS and MSDOS.SYS are special, hidden system
+files
+• The IO.SYS file moves the system's basic I/O
+functions into memory and then implements the
+MS-DOS default control programs, referred to as
+device drivers, for various hardware components.
+• The COMMAND.COM command interpreter accepts
+commands issued through the keyboard, or other
+input device, and carries them out according to the
+commands definition
+• When DOS runs an application, COMMAND.COM
+finds the program, loads it into memory, and then
+gives it control o f the system. When the program is
+shut down, it passes control back to the command
+interpreter.
+• Directory is just like a file folder, which contain all
+the logically related files. DOS files are organized
+in a hierarchical or an inverted tree-like structure.
+• DOS enables the user to organize the files i n a disk
+into directories and sub-directories. A directory
+within another directory i s called a sub-directory
+
+UNIX
+• Unix was designed to be a time sharing system.
+• Unix has a simple user interface that has the power
+to provide the services that user want.
+• It uses a hierarchical file system that allows easy
+maintainance and efficient implementation.
+• Unix file system is a multilevel tree.
+• Each user data file is simply a sequence of bytes.
+• It provides a simple, consistent interface to
+peripheral device.
+• Unix supports multiple processes.
+• Unix is a multiuser, multiprocess system.
+• CPU scheduling in Unix is a simple priority
+algorithm.
+• Swapping is used if a system is suffering from
+excess paging.
+• Unix hides the machine architecture from the user.
+• The system is written in high level language.
+• Unix consists of two separable parts: The Kernel
+and the systems programs.
+• The Kernel interacts with the machines hardware.
+• Shell interacts with the user.
+• Viewing the system a s a set of layers, the operating
+system i s commonly called the Kernel.
+he Kernel provides the file system, CPU
+scheduling, memory management through system
+calls.
+Architecture o f Unix O S
+• There are three levels:
+a. User level b. Kernel level c. Hardware level.
+• The file subsystem manages files, allcoating file
+space, controlling access to files and retrieving data
+for users. Processes interact with the file subsystem
+via a specific set of system calls.
+• The file subsystem accesses file data using a
+buffering mechanism that regulates flow between
+the Kernel and secondary storage devices.
+• The buffering mechanism interact with block I/O
+device drivers to initiate data transfer to and from
+the Kernel.
+• Hardware control is responsible for handling
+interrupts and for communicating with the machine.
+Devices such as disks or terminals may interrupt
+the CPU while a process i s executing.
+• The Kernel may resume execution of the interrupted
+process after servicing the interrupt.
+• The process control subsystem is responsible for
+process synchronization, IPC, memory management
+and process scheduling.
+• The file subsystem and the process control
+subsystem interact when loading a file into memory
+for execution. The process subsystems reads
+executable files into memory before executing them.
+The memory management module controls the allocation of memory. If at any time the system does not have enough physical memory for all processes, the Kernel moves them between main memory and secondary memory SO that all processes get a fair chance to execute.
+The scheduler module allocates the CPU to processes.
+The scheduler module allocates the CPU to processes. It schedules them to run in turn until they voluntarily relinquish the CPU while awaiting a resource or until the kernel preempts them when their recent run time exceeds a time quantum.
+The hardware control is responsible for handling interrupts and for communicating with the machine.
+Devices such as disks or terminals may interrupt
+the CPU while a process is executing.
+GUI based OS
+• The second approach allows the user to interface
+with the OS via a graphical user interface o r GUI.
+• Rather than having users directly enter commands
+via a command-line interface, a GUI allows
+provides a mouse-based window-and-menu system
+a s an interface.
+• Graphical user interfaces first appeared due in part
+to research taking place in the early 1970s at Xerox
+PARC research facility. The first GUl appeared on
+the Xerox Alto computer in 1973.
+• However, graphical interfaces became more
+widespread with the advent of Apple Macintosh
+computers in the 1980s. Microsoft's first version of
+Windows-version 1.0-was based upon a GUI
+interface to the MS-DOS OS.
+• Traditionally, UNIX systems have been dominated
+by command-line interfaces, although there are
+various GUI interfaces available.
+• The choice of whether to use a command-line or
+GUI interface is mostly one of personal preference.
+A s a very general rule, many UNIX users prefer a
+command-line interface as they often provide
+powerful shell interfaces.
+• Alternatively, most Windows users are pleased to
+use the Windows GUI environment and almost
+never use the MS-DOS shell interface.
+Windows
+Windows 7 is an operating system that Microsoft has produced for use on personal computers. It is the follow-up to the Windows Vista Operating System.
+The 64-bit version of Windows 7 is now commonly installed on larger client systems.
+Design goals are as follows:
+1. Security
+2. Reliability
+3. Application compatibility of windows and POSIX
+4. Good performance
+5. Extensibility
+6. Portability
+7. Support.
+security : Automatic analysis tools are used to test
+the security of windows source code. Windows XP
+receive security certificate (C-2 level Certificate)
+from US government. It uses Kerberos, access
+control list and packet filtering firewalls to protect
+the system.
+Reliability: Stable and most reliable windows
+operating system from Microsoft was windows
+2000. Windows uses combination of hardware and
+software protection. Hardware protection for virtual
+memory and software protection for operating
+system resources.
+Application compatibility of windows and POSIX :
+IEEE 1003.1 is standard used by POSIX. Without
+changing source code of windows, user cannot run
+POSIX application on windows platform.
+Performance : Windows XP OS provides high
+performance for desktop systems. Message passing method is used for interprocess communication.
+Windows support preemption of low priority
+threads enables the system to respond quickly to
+external events.
+Extensibility : Extensibility means to support or
+add new technologies. Windows XP is layered
+architecture system. Kernel runs in protected mode.
+An environment subsystems operates in user mode
+providing different API.
+Portability ： Windows XP support portability.
+Source code of windows XP is in C and C++
+language. Windows 7 OS can be moved from one
+hardware platform to another with relatively few
+changes. Platform-dependent code is isolated in a
+Dynamic Link Library (DLL) called the "Hardware
+Abstraction Layer" (HAL).
+
+Windows Architecture
+• Windows architecture consists of hardware
+abstraction layer, kernel and executive. Fig. 1.11.1
+shows windows XP architecture block diagram.
+Windows XP architecture is based on microkernel
+architecture. It is modular operating system.
+Windows X P i s also layered operating system.
+Hardware Abstraction Layer (HAL)
+• HAL interacts directly with hardware, abstracting
+hardware specifies to the rest of the system. HAL
+Also interacts with the microkernel. The microkernel
+and the HAL combine to make Windows XP
+portable allowing it to run in many different
+hardware environments.
+• HAL is responsible for mapping various low level,
+processor specific operations into a fixed interface
+that is used by the XP kernel and executive.
+• HAL provides support symmetric
+multiprocessing. Device drivers map devices and
+access them directly.
+• The function of HAL is to present the rest of the
+operating system with abstract hardware that hides
+the specific details of processor versions, support
+chipset and other configurations.
+• HAL does not provide services for specific I/C
+devices such as mouse, keyboards and disks
+• Layered on the top of the microkernel are the
+mode components
+kernel
+responsible
+for
+administering the operating system subsystems.
+Collectively these components are known as the
+executive.
+• HAL also manages clocks and timers in a portable
+way. After booting the system, HAL talks to the
+BIOS and checks the system configuration to find
+out which buses and I/O devices the system
+contains and how they have been configured.
+Kernel Layer
+• Kernel creates basic unit of computation and
+provides the foundation for multitasking support.
+The kernel provides objects and threads on top of
+the HAL and the hardware. Software that uses the
+kernel can be defined using objects and threads as
+primitives.
+• Functions of kernel:
+1. Thread scheduling
+2. Interrupt and execution handling
+3. Low level processor synchronization
+4. Recovery after power failure.
+To implement objects and threads, the kernel must
+manage the hardware interrupts and exceptions,
+perform
+processor scheduling and
+multiprocessor synchronization.
+• The kernel's thread scheduler is responsible for
+determining which thread is executing on each CPU
+in the system. When switching from one thread to
+another thread, the scheduler runs on the CPU and
+ensures that the registers and other hardware state
+have been saved.
+• Thread state are ready, standby, running, waiting,
+transition and terminated. The dispatcher uses a 32
+level priority scheme to determine the order of
+thread execution. Priorities are of two types: real
+time class and variable class.
+• As in multiple-level queue scheduler, as long as
+there are threads in the highest priority queue, then
+only those threads will be allocated the processor. If
+there i s no thread in that queue, then the scheduler
+will service the threads in the second highest
+priority queue.
+• In the second highest priority queue, threads are
+not in the ready state, the scheduler will service the
+third highest priority queue and s o on.
+• Windows XP is not a real time system and cannot
+guarantee that threads running at high priority will
+receive the processor before any fixed deadline.
+• Kernel is object oriented. Kernel objects are intended
+to be fast. They run in supervisor mode in the
+trusted context.
+• Kernel object cannot be manipulated directly by
+user mode programs, only through function calls.
+• Kernel objects are of two types: Control object and
+dispatcher object.
+• Control object implement mechanism to control the
+hardware and kernel resources. Control objects are
+data structures that the kernel layer provides as
+abstractions to the executive layer for managing the
+CPU.
+• Dispatcher objects are used to implement threads
+along
+with their scheduling and synchronization
+operations.
+• In windows, objects may be either named or
+unnamed.
+software Interrupts
+• Software interrupts are of two types: Asynchronous
+and deferred procedure call.
+1. Asynchronous Procedure Call (APC)
+• APC execute in the context of a specific thread.
+APC is used to break into the execution of a
+specified thread and to cause a procedure to be
+called in a specified processor mode.
+• The system uses APCs to complete various
+functions that must b e done in a specific threads
+context. Each thread maintains two APC queues :
+One for kernel mode and another for user mode
+APC.
+• Software interrupts that are generated by kernel
+mode components are the kernel mode APC. After
+allocating processor, thread must process all
+pending kernel mode APC.
+• User mode thread can create a user APC and
+request to queue this APC to another thread. A
+thread executes user mode APCs when the thread
+enters an alertable wait state.
+• User mode APC can also be used to deliver
+notification of I/O completion in user mode to the
+thread that initiated the I/O.
+2. Deferred Procedure Call (DPC)
+• DPCs are software interrupts. They execute at
+dispatch interrupt request levels (IRQL). DPC are
+used to postpone interrupt processing to avoid
+delaying hardware interrupts.
+• DPC is also used to implements timers and
+inter-process communication.
+• When device driver generates a DPC, the system
+places the DPC in a queue associated with a specific
+processor. The driver routine can request a
+processor to which the DPC should be queued. If
+processor is not specified, the processor queues the
+DPC to itself. The routine can also specify the DPC
+priority.
+Object Manager
+• Object manager is the executive components.
+• I n Windows XP, cach object is defined b y an object
+type. Object types are created by executive
+components. The object manager maintains the
+windows X internal name space.
+Object types in windows XP include devices, files,
+threads, processes, pipes, semaphores etc. each
+windows X P object is a n instance of a n object type.
+• The object manager is responsible for creating and
+deleting objects and maintaining information about
+each object type.
+Virtual Memory Manager (VMM)
+• Windows XP allocates a unique 4 GB virtual
+address space to each process. By default, a process
+can access only the first 2 GB of its virtual address
+space. The remaining 2 GB address space is used
+for kernel components and this is called as system
+space.
+• Virtual
+memory manager uses a two level
+hierarchical addressing system. Windows X P divides
+virtual memory into fixed size pages which it stores
+either in page frames in main memory or files o n
+disk.
+• Virtual memory manager assigns each process one
+page directory table. The page directory table
+contains page directory entries.
+• Each page directory entries points to a page table.
+Page tables contain page table entries. Each page
+table entries points to a page frame in main
+memory o r a location o n disk.
+• VMM uses copy on write pages and employs lazy
+allocation. Windows XP allows applications to
+allocate large pages. Large page is a set of
+contiguous pages. Operating system consider this a s
+one page. The system manages copy on write pages
+using prototype page tables.
+Memory Allocation
+• Memory allocation i s i n three stages :
+1. Reserve
+2. Commit
+3. Access
+a. A process must first reserve space in its virtual
+address space.
+b. A process may not access space it has reserved
+until it commits the space. Process usually commits a page only when it is read to write to the page
+c. When a process is ready to use its committed
+memory, it accesses the committed virtual
+memory
+Process Manager
+• Process consists of program code, an execution
+context, resources and one or more threads. Process
+manger provides services for creating, deleting and
+using processes and threads.
+• Process and threads is the object. Windows
+processes are implemented as objects. Both process
+and thread objects have built in synchronization
+capabilities.
+
+
+1.4 Different Services of Operating System, System Calls: Concept, types of system calls
+
+Different Services of Operating System
+• Operating system provides different types of
+services to different users. It provides services to
+program like load of data into memory, allocating
+disk for storage, files or directory for open or read
+etc.
+• Services will change according to the operating
+system. May be the two different operating system
+provides same type of services with different
+names. OS makes programmer job easy by
+providing different services.
+• Following are the list of services provided by
+operating systems:
+1. Program execution
+2. Input-output operation
+3. Error detection
+4. File and directory operation
+5. Communication
+6. Graphical User Interface
+
+1. Program execution : Before executing the
+program, it is loaded into the memory by
+operating system. Once program loads into
+memory, its start execution. Program finishes its
+execution with error or without error. It is up t o
+the user for next operation.
+2 . Input - output operation : Program is
+combination of input and output statement.
+While executing the program, it requires I/O
+device. OS provides the I/O devices to the
+program.
+3. Error detection : Error i s related to the memory,
+CPU, I/O device and in the user program.
+Memory is full, stack overflow, file not found,
+directory not exist, printer is not ready, aattempt
+o access illegal memory are the example of errors
+detection.
+4. File and directory operation: User wants to read
+and writes the file and directory. User wants to
+search the file/directory, rename file, and modify
+the file etc. user also create the file or directory.
+All these operation is performed by user by
+using help o f operating system.
+5. Communication: Communication may be
+inter-process communication and any other type
+of communication. Data transfer is one type of
+communication. Communication is in between
+two process of same machine or two process of
+different machine. Pipe, shared memory, socket
+and message passing are the different methods of
+communication.
+6. Graphical user interface : User interacts with
+operating system by using user interface. All
+operating
+system provides user interface.
+Command line interface and batch interface are
+two types o f user interface used in the operating
+system. In command line interface, user enters
+the text command for performing operation.
+Batch interface uses files. A file contains the
+command various operations. When file
+executes, command output is displayed on the
+screen.
+
+
+System Calls
+• System calls provide the interface between a
+running program and the operating system. Any
+single CPU computer can execute only one
+instruction a t a time. If a process i s running a user
+program in user mode and needs a system service,
+such a s reading a data from a file, it has to execute
+a trap instruction to transfer control to the operating
+system.
+• Operating system provides services and system call
+provides interface to these services. System call is
+written in language C and C++ a s routines. System
+calls are performed i n a series o f steps.
+• System call is a technique by which a program
+executing in user mode can request the kernel's
+service.
+An application programmer interface is a function
+definition that specifies how to obtain a given
+service.
+•Fig. 2.2.1 shows the working of system call
+
+hen application program calls the stub, trap
+instruction is executed and CPU switches to
+supervisor mode. Each system call contains its
+identification number.
+• OS maintains the table of system call number.
+Operating system executes the system call using
+that number.
+•When the function completes, it switches the
+processor to user mode and then returns control to
+the user process.
+• A system call is an explicit request to the kernel
+mode via a software interrupt. When user mode
+process invokes a system call, the CPU switches to
+kernel mode and starts the execution of the kernel
+function.
+• Making a system call is like making a special kind
+of procedure call. Only system call enters the kernel
+and procedure call does not enter into the kernel.
+• Kernel implements many different types of system
+calls. The user mode process must pass a parameter
+called the system call number to identify the
+required system call. All system calls return an
+integer value. In the kernel, positive or 0 values
+denote a successful termination of the system call
+and negative values denote an error condition.
+ does not necessarily correspond to a
+specific system calls.
+1. API could offer its services directly in user
+mode.
+2. Single API function could make several system
+calls.
+3. Several API functions could make the same
+system call.
+• API supports a set of functions for application
+programmer. It includes passing parameter to each
+function and return values. API used by application
+programmer are a s follows :
+1. Windows system : win32 API
+2. POSIX system : POSIX API
+3. Virtual machine : Java API
+• User function uses trap instruction for using kernel
+services. Application programmer uses ordinary
+procedure call. Operating system provides a library
+o f user functions with name corresponding to each
+actual system call. Each of these stub function
+contains a trap to the operating system function.
+• Trap is also called system call interface.
+• Three general methods are used to pass parameters
+t o the operating system.
+a. Pass parameters in registers
+b. Registers pass starting addresses of blocks of
+parameters
+c. Parameters can be placed, or pushed, onto the
+stack by the program, and popped off the stack
+by the Os
+• Fig. 2.2.2 shows passing o f parameters as a table.
+
+Classification of System Call
+• System call i s divided into following types :
+1. File management
+2. Process management
+3. Interprocess communication
+4. I/O device management
+5. Information processing and maintenance
+
+1. File management
+• File management system calls are create file, delete
+file, open file, close file, read file, write file, get and set
+file attribute.
+• User can create a file using create() system call. File
+name with attributes are required for creating and
+deleting a file through system call. After creating a
+file, user can performs various operations on the
+file.
+• Read, write, reposition are the operation performed
+on the file. File is closed after finished using. Same
+type of operation is performed on directory.
+• Every file has file attributes. File attributes includes
+name of file, type of file, accounting information etc.
+To perform any operation on the file, set file
+attribute and get file attribute executed to check the
+attributes.
+2. Process management
+• System calls for process management are create,
+terminate, load, execute, abort, set and get process
+attributes. Other systemcall for process
+management is wait for time, wait event, allocate
+and free memory.
+• In some situation user want to terminate the
+currently running process abnormally then system
+call used. Other reasons for abnormal
+process
+termination are error message generated, memory
+dump, error trap.
+• Operating system provides debugging facility to
+determine the problem of dump. Dump is written
+to secondary storage disk.
+• Debugger is a one type of system program. It
+provides facility for finding and correcting bug.
+ 3. Interprocess communication
+• Pipe, socket, message passing and shared memory
+are used for interprocess communication. Send
+message, receive message, create and delete
+connection, attach remote device are the system
+calls used in interprocess communication.
+• Shared memory: A process uses memory for
+communication. One process will create a memory
+portion which other processes can access. A shared
+segment can be attached multiple times by the same
+process. Shared memory is the fastest form of IPC
+because data does not need to be copied between
+processes.
+• A socket is a bidirectional communication device
+that can be used to communicate with another
+process on the same machine or with a process
+running on other machine.
+• Message passing: Two processes communicate with
+each other by passing messages. Message passing i s
+direct and indirect communication. Indirect
+communication uses mailbox for sending receiving
+message from other process.
+4. I/O device management
+• System calls for device management are request ()
+device, release () device, get and set device
+attributes, read, write etc.
+• Process needs several resources in its life time.
+When process request for resources, request is
+granted if it is free otherwise request is rejected.
+Once request is granted, control is transfer to the
+process.
+5. Information processing and maintenance
+• System calls for this category is set time and date,
+get time and date, get system data, get system data,
+get and set process, file and device.
+• Most of the operating system provides system call
+for set and get the time and date.
+This type of system call is used for transferring
+information from user to operating system and vice
+versa.
+1.5 Operating System Components: Process Management, Main Memory Management, File Management, IO Management, Secondary Storage Management
+
+OS Components
+
+Process Management
+• Process refers to a program in execution. The
+process abstraction is a fundamental operating
+system mechanism for management of concurrent
+program execution. The operating system responds
+by creating a process.
+• A process needs certain resources, such as CPU
+time, memory, files and I/O devices. These resources
+are either given to the process when it i s created or
+allocated to it while it is running.
+• When the process terminates, the operating system
+will reclaim any reusable resources.
+• The term process refers to an executing set of
+machine instructions. Program by itself is not a
+process. A program is a passive entity.
+• The operating system is responsible for the
+following activities of the process management.
+1. Creating and destroying the user and system
+processes.
+2. Allocating hardware resources among the
+processes.
+3. Controlling the progress o f processes.
+4. Providing mechanisms for process
+communications.
+5. Also provides mechanisms for deadlock
+handling.
+
+Main Memory Management
+• The memory management modules of an operating
+system are concerned with the management of the
+primary (main memory) memory. Memory
+management is concerned with following functions:
+1. Keeping track of the status of each location of
+main memory. ie. each memory location is
+either free or allocated
+2. Determining allocation policy for memory.
+3. Allocation technique ie. the specific location
+must be selected and allocation information
+updated.
+4. Deallocation technique and policy. After
+deallocation, status information must be
+updated.
+• Memory management is primarily concerned with
+allocation of physical memory of finite capacity to
+requesting processes. The overall resource utilization
+and other performance criteria of a computer
+system are affected by performance of the memory
+management module. Many memory management
+schemes are available and the effectiveness of the
+different algorithms depends on the particular
+situation.
+
+ File Management
+• Logically related data items on the secondary
+storage are usually organized into named collections
+called files. In short, file is a logical collection of
+information. Computer uses physical media for
+storing the different information.
+• A file may contain a report, an executable program
+o r a set of commands to the operating system. A
+file consists of a sequence of bits, bytes, lines or
+records whose meanings are defined by their creators. For storing the files, physical
+(secondary storage device) is used.
+media
+• Physical media are of different types. These are
+magnetic disk, magnetic tape and optical disk. All
+the media has its own characteristics and physical
+organization. Each medium is controlled by a
+device.
+• The operating system is responsible for the
+following in connection with file management.
+1. Creating and deleting o f files.
+2. Mapping files onto secondary storage.
+3. Creating and deleting directories.
+4. Backing up files on stable storage media.
+5. Supporting primitives for manipulating files
+and directories.
+6. Transmission of file elements between main
+and secondary storage.
+• The file
+management subsystem can b e
+as one o r more layers of the operating
+implemented system.
+
+I/O System Management
+• The module that keeps track of the status of devices
+is called the I/O traffic controller. Each I/O device
+has a device handler that resides in a separate
+process associated with that device.
+• The /O subsystem consists of
+1. A memory
+management component that
+includes buffering, caching and spooling.
+2. A general device driver interface.
+3. Drivers for specific hardware devices.
+
+Secondary Storage Management
+• A storage device is a mechanism by which the
+computer may store information in such a way that
+this information may be retrieved at a later time.
+Secondary storage device i s used for storing all the
+data and programs. These programs and data access
+by computer system must be kept in main memory.
+Size of main memory is small to accommodate all
+data and programs. It also lost the data when
+power is lost. For this reason secondary storage
+device is used. Therefore the proper management of
+disk storage is o f central importance to a computer
+system.
+The operating system is
+Following activities in connection with the disk
+management.
+1 . Free space management 2 . Storage allocation
+3. Disk scheduling
+• The entire speed and performance of a computer
+may hinge on the speed of the disk subsystem.
+
+
+
+
+Unit 2 : Process Management
+
+2.1 process
+• Process term is used in MULTICS system in the
+1960. Process is an asynchronous activity.
+• Process is a n active entity that requires a set of
+resources, including a processor, program counter,
+registers to perform its function. Multiple processes
+may b e associated with one program.
+• Process means a program in execution. Process
+execution must progress in sequential order. It also
+called task. Task is a single instance of a n
+executable program. Fig. 3.1.1 shows memory layout
+for a process.
+ Each process has its own address space. Address
+space is divided into two regions :
+1 . Text region 2. Data region 3. Stack region
+• Text region: It stores the code that that the
+processor executes.
+• Data region: It stores variables and dynamically
+allocated memory that the process uses
+during
+execution.
+• Stack region : It stores instructions and local
+variables for active procedure calls.
+• Process i s a dynamic entity that executes a program
+on a particular set o f data using resources allocated
+by the operating system.
+• A process can run to completion only when
+requested hardware and
+software reso urces have
+been allocated to the process.
+• Program is a passive entity, Program becomes
+process when executable file loaded into memory. A
+process may be independent of other processes in
+the system.
+• After booting operating system, it creates
+foreground processes and background processes.
+• Foreground processes interact with user and
+background processes is used by system.
+Background processes are related e-mail, web pages,
+news and printing.
+• A process is used as a fundamental unit for
+resource allocation in operating system. A process
+normally has its own private memory area in which
+it runs.
+• Text region contains executable instructions. It is be
+placed below the heap or stack.
+• An initialized data region contains the static and
+global variables that are initialized by the user.
+ Un-initialized data region contains all static and
+global variables that are initialized by kernel to
+zero.
+• Heap is used for dynamic memory allocation and
+stack contains program counter.
+
+2.1.1 Process States
+• Each process has an execution state which indicates
+what process is currently doing. The process
+descriptor is the basic data structure used to
+represent the specific state for each process.
+• Fig. 3.1.2 shows a process state diagram.
+• A state diagram i s composed of a set of states and
+transitions between states.
+• The process states are new, ready, running, waiting
+and terminated.
+1. New : Initially process will be in new state. OS
+creates new process by using fork) system
+call.
+2. Ready: The process is competing for the CPU.
+Process reaches to the head of the list (queue).
+3. Running: The process that is currently being
+executed. OS allocates all the hardware and
+software resources to the process for execution.
+4. Waiting: A process is waiting until some
+event occurs such as the completion of an
+input-output operation.
+5. Terminated : A process is completes its
+operations and releases it all resources.
+
+2.1.2 Process Control Block
+• Operating system keeps a n internal data structure to
+describe each process it manages.
+• When OS creates process, it creates this process
+descriptor. In some operating system, it calls
+Process Control Block (PCB).
+• Fig. 3.1.3 shows process control block.
+• Process control block will change according to the
+operating system. PCB is also called task control
+block.
+he PCB is identified by an integer Process ID
+(PID). When a process is running, its hardware state
+is inside the CPU.
+• When the OS stops running a process, it saves the
+register's values in the PCB.
+• Mocates a CB or it ted by operating and put
+PCB o n the correct queue. Following information is
+stored in process control block.
+1. Process identification : Each process is
+uniquely identified by the user's identification
+and a pointer connecting it to its descriptor.
+2. Priority number : Operating system allocates
+the priority number t o each process. According
+to the priority number it allocates the
+resources.
+3. Program counter : The PC indicates the
+address of the next instruction to be executed
+for this current process.
+4. Memory allocation: It contains the value of
+he base registers, limit registers and the page
+ables depending on the memory system used
+by the operating system.
+5. I/O status information : It maintains
+information about the open files, list of I/O
+devices allocated to the process etc.
+6. List of open files: Process uses number of
+files for operation. Operating system keeps
+track of all opened file by this process.
+7. Process state: Process may be in any one of
+the state: new, ready, running, and waiting,
+terminate.
+• When process changes the state, the operating
+system must update information in the process's
+process control block. Process control block maintain
+other information which is not included in PCB
+block diagram. This information includes CPU
+scheduling, file management, input-output
+management information.
+• Fig. 3.1.4 shows process table with PCB.
+• When process is created, hardware registers and
+flags values are set by loader or linker.
+• Operating system maintains pointers to each
+process's PCB in a per user process table o r system
+wide process table. This information is used to
+access PCB quickly.
+
+2.1.3 Process Scheduling
+• CPU utilization is maximizing by using
+multiprogramming concept. Processor is not idle, it
+is executing a process. Processor scheduler selects
+one process for execution from the ready queue.
+Scheduling Queue
+• Scheduling queue is queue of processes or
+input-output devices. When the user process enters
+into the system, they put into the job queue. Job
+queue consists o f all processes of the system.
+• Operating system maintains different types of
+queues for different purposes. The queue are ready
+queue, device queue etc. Fig. 3.2,1 shows ready
+queue and device queue.
+• Ready queue: The processes which are ready and
+waiting to execute are kept in the ready queue.
+Ready queue is stored in main memory. Linked list
+i s used for representing ready queue. Pointer field
+of PCB i s used for this.
+Device queue : Device queue is a queue for which
+multiple processes are waiting for a particular I/O
+device. Each device has maintained its own device
+queue.
+• Process scheduling is represented by queueing
+diagram. Newly created process is kept into the
+ready queue and waits for processor. When CPU
+select the process for executing, following things
+happens:
+1. Process may require I/O device to perform
+operation. So it is put into the 1/O queue.
+2. Process may create child process and wait for
+child process termination.
+3. Because of interrupt, process preempted from
+CPU and put into the ready queue.
+
+2.2.1 Schedulers
+• Schedulers are used to handles process scheduling.
+It is one type of system software and selects the
+jobs from the system and decide which process to
+run. Schedulers are of three types -
+1. Long term scheduler
+2. Short term scheduler 3. Medium term
+scheduler
+• Fig. 3.2.2 shows queueing diagram for process
+scheduling. (See Fig. 3.2.2 on next page)
+
+Long term scheduler
+• Long term scheduler is also called job scheduler. It
+determines which process are admitted to the
+system for processing. Processes are selected from
+the queue and loads into the main memory for
+execution.
+• Long term scheduling controls the degree of
+multiprogramming in multitasking systems. It
+provides a balanced mix o f jobs, such as 1/0 bound
+and CPU bound.
+• Long term scheduling i s used i n real time operating
+system. Time sharing operating system has no long
+term scheduler.
+
+Medium term scheduler
+• Medium term scheduler is part of swapping
+function. Sometimes it removes the process from
+memory. It also reduces the degree of
+multiprogramming.
+• If process makes a n I/O request and i t i s in memory
+then operating system takes this process into
+suspended states. Once the process becomes
+suspended, it cannot make any progress towards
+completion.
+• In this situation, the process is removed from
+memory and makes free space for other process.
+• The suspended process is stored in the secondary
+storage device i.e. hard disk. This process is called
+swapping.
+
+Short term scheduler
+• Short term scheduler is also called CPU scheduler.
+It selects the process from queue which are ready to
+execute and allocate the CPU for execution.
+• Short term scheduler is faster that long term
+scheduler. This scheduler makes scheduling
+decisions much more frequently than the long-term
+or mid-term schedulers.
+• A scheduling decision will at a minimum have to
+be made after every time slice, and these are very
+short.
+• It is also known a s dispatcher.
+
+2.2.2 Context Switch
+A context switch is the switching of the CPU from
+one process or thread to another. A context is the
+contents of a CPU's registers and program counter
+a t any point in time.
+• Switching the CPU to another process requires
+performing a state save of the current process and a
+state restore of a different process. This task is
+known as a context switch.
+• A context switch can mean a register context switch,
+a task context switch, a thread context switch or a
+process context switch.
+• A register is a small amount of very fast memory
+inside of a CPU that is used to speed the execution
+of computer programs by providing quick access to
+commonly used values.
+A program counter is a specialized register that
+indicates the position of the CPU in its instruction
+sequence and which holds either the address of the
+instruction being executed or the address of the
+next instruction to be executed, depending on the
+specific system.
+• Context switching can be described in more detail
+a s the Kernel performing the following activities
+with regard to processes (including threads) on the
+CPU :
+1. Suspending the progression of one process and
+storing the CPU's state (i.e., the context) for
+that process somewhere in memory.
+2. Retrieving the context o f the next process from
+memory and restoring it in the CPU's registers
+and
+3. Returning to the location indicated by the
+program counter in order to resume
+the
+process.
+• Context switches can occur only in Kernel mode
+(system mode). Kernel mode is a privileged mode
+of the CPU in which only the Kernel runs and
+which provides access to all memory locations and
+all other system resources.
+• Other programs, including applications, initially
+operate in user mode, but they can run portions of
+the Kernel code via system calls. Software context
+switching can be used on all CPUs and can be used
+to save and reload only the state that needs to be
+changed.
+• To use the hardware context switch you need to tell
+the CPU where to save the existing CPU state and
+where to load the new CPU state from. The CPU
+state is always stored in a special data structure
+called a TSS (Task State Segment).
+• Context switch times are highly dependent on
+hardware support. Context switching represents a
+substantial cost to the system in terms of CPU time
+and it can be the most costly operation on an
+operating system.
+• There are three situations where a context switch
+needs to occur. They are multitasking, interrupt
+handling, user and Kernel mode switching.
+
+2.3 Inter-Process Communication
+Exchange of data between two or more separate,
+independent processes/threads is possible using IPC.
+Operating systems provide facilities/resources for
+Inter-Process Communications (IPC), such a s
+message queues, semaphores, and shared memory.
+• A complex programming environment often uses
+multiple cooperating processes to perform related
+operations. These processes must communicate with
+each other and share resources and information. The
+Kernel must provide mechanisms that make this
+possible. These mechanisms are collectively referred
+t o a s interprocess communication.
+• Distributed computing systems make use of these
+facilities/resources to provide Application
+Programming Interface (API) which allows IPC to
+be programmed at a higher level of abstraction.
+(e.g., send and receive).
+• Five types of inter-process communication are as
+follows:
+1. Shared memory permits processes to
+communicate by simply reading and writing to
+a specified memory location.
+2. Mapped memory is similar to shared memory,
+except that it i s associated with a file in the file
+system.
+3 . Pipes permit sequential communication from
+one process to a related process.
+4 . FIFOs are similar to pipes, except that
+unrelated processes can communicate because
+the pipe i s given a name in the file system.
+5. Sockets support communication between
+unrelated processes even on different
+computers.
+. Data transfer : One process may wish to send
+data to another process.
+2. Sharing data : Multiple processes may wish to
+operate on shared data, such that if a process
+modifies the data, that change will be
+immediately visible to other processes sharing
+it.
+. Event modification: A process may wish to
+notify another process or set of processes that
+some event has occurred.
+4. Resource sharing: The Kernel provides default
+semantics for resource allocation; they are not
+suitable for all application.
+5. Process control: A process such a s a debugger
+may wish to assume complete control over the
+execution of another process.
+• IPC has two forms: IPC on same host and IPC o n
+different hosts
+PC is used for 2 functions :
+1. Synchronization : Used to coordinate access to
+resources among processes and also to coordinate
+the execution of these processes. They are record
+locking, semaphores, mutexes and condition
+variables.
+2. Message passing: Used when processes wish to
+exchange information. Message passing takes
+several forms such as : Pipes, FIFOs, message
+queues and shared memory.
+
+2.3.1 Shared Memory
+A region of memory that is shared by co-operating
+processes is established. Processes can then
+exchange information by reading and writing data
+t o the shared region.
+• Shared memory allows maximum speed and
+convenience of communication, as it can be done at
+memory speeds when within a computer. Shared
+memory is faster than message passing. as
+message-passing systems are typically implemented
+using system calls and thus require the more
+time-consuming task of Kernel intervention.
+• In contrast, in shared-memory systems, system calls
+are required only to establish shared-memory
+regions. Once shared memory is established, all
+accesses are treated as routine memory accesses,
+and no assistance from the Kernel is required.
+• Fig. 3.3.2 shows client/server with shared memory.
+
+Advantages
+1. Good for sharing large amount of data. 2. Very
+fast.
+
+Limitations
+1. No synchronization provided - applications must
+create their own.
+2. Alternative to shared memory is mmap system
+call, which
+
+2.3.2 Message Passing System
+Message passing system requires the
+synchronization and communication between the
+two processes. Message passing used as a method
+of communication in microkernels. Message passing
+systems come in many forms. Messages sent by a
+process can be either fixed or variable size. The
+actual function of message passing is normally
+provided in the form of a pair of primitives.
+a) Send (destination_name, message)
+b) Receive (source_name, message
+ Send primitive is used for sending a message to
+destination. Process sends information in the form
+of a message to another process designated by a
+destination. A process receives information by
+executing the receive primitive, which indicates the
+source o f the sending process and the message.
+• Design characteristics of message system for IPC.
+1. Synchronization between the process
+2. Addressing
+3. Format of the message
+4. Queueing discipline.
+ssues in IPC by Message Passing
+• Message is a block of information.
+• A message is a meaningful formatted block of
+information sent by the sender process to the
+receiver process.
+• The message block consists of a fixed length header
+followed by a variable size collection of typed data
+objects.
+• The header block of a message may have the
+following elements:
+1. Address: A set of characters that uniquely
+identify both the sender and receiver.
+2. Sequence number: It is the message identifier
+to identify duplicate and lost messages in case
+o f system failures.
+3. Structural information: It has two parts. The
+type part that specifies whether the data to be
+sent to the receiver is included within the
+message or the message only contains a pointer
+to the data. The second part specifies length of
+the variable-size message.
+• Fig. 3.3.3 shows the typical message format.
+Some important issues to be considered for the
+design of an IPC protocol based message passing
+system:
+i. The sender's identity
+ii. The receiver's identity
+ili. Number of receivers
+iv. Guaranteed acceptance of sent messages b y the
+receiver
+v. Acknowledgment by the sender
+vi. Handling system crashes or link failures
+vii. Handling o f buffers
+vili. Order o f delivery o f messages
+
+2.3.3 Features of Message Passing
+1. Simplicity: Message passing system should be
+simple and easy to use. It should be possible to
+communicate with old and new applications.
+2. Uniform semantics Message passing is used
+for two types of IPC.
+a. Local communication : Communicating
+processes are o n the same node.
+b. Remote communication : Communicating
+processes are on the different nodes.
+3. Efficiency: IPC become s o expansive if message
+passing system is not effective. Users try
+avoiding to IPC for their applications. Message
+passing system will become more efficient if we
+try to avoid more message exchanges during
+communication process. For examples :
+a. Avoiding the costs of establishing and
+terminating connection.
+b. Minimizing the costs of maintaining the
+connections.
+c. Piggybacking of acknowledgement.
+4. Reliability : Distributed systems are prone to
+different catastrophic events such as node crashes
+or physical link failures. Loss of message because
+of communication link fails. To handle the loss
+messages, we required acknowledgement and
+retransmission policy. Duplicate message is one
+o f the major problems. This happens because of
+timeouts or events of failures.
+5. Correctness: Correctness is a feature related to
+IPC protocols for group communication. Issues
+related t o correctness are as follows:
+i. Atomicity: Every message sent to a group of
+receivers will be delivered to either all of
+them or none of them.
+ii. Ordered delivery : Messages arrive to all
+receivers in an order acceptable to the
+application.
+iii. Survivability: Messages will b e correctly
+delivered despite partial failures of processes,
+machines, or communication links.
+6. Security: Message passing system must provide
+a secure end to end communication.
+7. Portability : Message passing system should
+itself be portable.
+
+2.4 Threads
+Thread is a dispatchable unit of work. It consists of
+thread ID, program counter, stack and register set.
+Thread is also called a Light Weight Process (LWP).
+Because they take fewer resources then a process. A
+thread is easy to create and destroy.
+• It shares many attributes of a process. Threads are
+scheduled o n a processor. Each thread can execute a
+set of instructions independent of other threads and
+processes. Fig. 3.4.1 shows a thread.
+Every program has at least one thread. Programs
+without multithreading executes sequentially. That
+is, after
+executing
+one instruction the next
+instruction i n sequence is executed.
+• Thread is a basic processing unit to which an
+operating system allocates processor time and more
+than one thread can be executing code inside a
+process.
+• When user double click on an icon by using mouse,
+the operating system creates a process and that
+process has one thread that runs the icon's code.
+• Each thread belongs to exactly one process and no
+thread can exist outside a process. Each thread
+represents a separate flow of control.
+• Normally, an operating system will have a separate
+thread for each different activity. The OS will have
+a separate thread for each process and that thread
+will perform O S activities on behalf of the process.
+In this condition, each user process is backed by a
+kernel thread. When process issues a system call to
+read a file, the process's thread will take over, find
+out which disk
+accesses to generate, and issue the
+low level instructions required to start the transfer.
+It then suspends until the disk finishes reading in
+the data.
+• When process starts up a remote TCP connection,
+its thread handles the low-level details of sending
+out network packets.
+• In Remote Procedure Call (RPC), servers are
+multithreaded. Server receives the messages using a
+separate thread.
+• Different operating system uses threads in different
+ways.
+1. Free memory is managed by kernel thread in
+LINUX OS.
+2. Solaries uses a kernel thread for interrupt
+handling.  
+
+2.4.1 Thread Benefits
+1. Context switching time is minimized.
+2. Thread support for efficient communication.
+3. Resource sharing is possible using threads.
+4. A thread provides concurrency within a process.
+5. It is more economical to create and context
+switch threads.
+
+2.4.3 Thread Lifecycle
+Fig. 3.4.2 shows a thread lifecycle. A thread has one
+of the following states.
+1. New : Thread is just created.
+2. Ready Thread's start) method invoked and
+now it is executing. O S put thread into Ready
+queue.
+3. Running: Highest priority ready thread enters
+the running state. Thread is assigned a
+processor and now is running.
+4. Blocked: This is the state when a thread is
+waiting for a lock to access an object.
+5. Waiting: Here thread is waiting indefinitely
+for another thread to perform a n action.
+6. Sleeping: Thread sleep for a specified time of
+period. When sleeping time expires, it enters to
+ready state. CPU is not used by sleeping
+thread.
+7. Dead: When thread completes task or
+operation.
+
+
+2.4.4 User Level Thread
+User level thread uses
+user space for thread
+scheduling. These threads are transparent to the
+operating system. User level threads are created by
+runtime libraries that cannot execute privileged
+instructions.
+• User-level threads have low overhead but it can
+achieve high performance in computation.
+User-level threads are managed entirely by the
+run-time system.
+• User-level threads are small and faster. A thread is
+simply represented by a PC, registers, stack
+small thread control block. Fig. 3.4.3 shows user
+he code for creation and destroying thread,
+message passing and data transfer, thread
+scheduling is included into thread library. Kernel is
+unaware of user level thread.
+User level threads do not invoke the Kernel for
+scheduling decision.
+• User level thread are also called many to one
+mapping thread because the operating system maps
+all threads in a multithreaded process to a single
+execution context. The operating system considers
+as each multithreaded
+processes as a single
+execution unit.
+• Example: POSIX Pthreads and Mach C-threads.
+Advantages :
+1. Kernel mode privilege does not require for
+thread switching
+2. These threads are fast t o create and manage.
+3. User level thread works even if the OS does not
+support threads.
+4. User level threads are more portable.
+5. Threading library controls flow o f thread.
+Disadvantages:
+1. If thread blocks, the Kernel may block the all
+threads.
+2. Not suitable for multiprocessor system.
+3. User level threads also do not support system
+wide scheduling priority.
+
+2.4.5  Kernel Level Thread
+• In Kernel level thread, thread management is done
+by Kernel. Operating systems support the Kernel
+level thread.
+• Since Kernel managing threads, Kernel can schedule
+another thread if a given thread blocks rather than
+blocking the entire processes. Fig. 3.4.4 shows
+Kernel level thread.
+Kernel level thread
+support one to one thread
+mapping. This mapping requires each user thread
+with kernel thread. Operating system performs this
+mapping-
+• Threads are constructed and controlled by system
+calls. The system knows the state of each thread.
+• Thread management code is not included in the
+application code. It i s only API to the Kernel thread.
+Windows operating system uses this facility.
+• Any application can be programmed to be
+multithreaded. All of the threads within
+application are supported within a single process.
+• Kernel performs scheduling on a thread basis. The
+Kernel support for scheduling and management,
+thread creation only in Kernel space.
+• Kernel level threads are slower than user level
+threads.
+• Example: Windows 95/98/NT, Sun Solaris and
+Digital UNIX
+Advantages:
+1. Each thread can be treated separately.
+2. A thread blocking in the Kernel does not block
+all other threads in the same process.
+3. Kernel routines itself a s multithreaded.
+Disadvantages:
+1. If thread blocks, the Kernel may block the all
+threads.
+2. Not suitable for multiprocessor system.
+3. User level threads also do not support system
+wide scheduling priority.
+3.4.5 Kernel Level Thread
+• In Kernel level thread, thread management is done
+by Kernel. Operating systems support the Kernel
+level thread.
+• Since Kernel managing threads, Kernel can schedule
+another thread if a given thread blocks rather than
+blocking the entire processes. Fig. 3.4.4 shows
+Kernel level thread.
+User
+space
+• User threads
+Kernel
+space
+Processor
+Disadvantages :
+1. Slower than the user level thread.
+2. There will be overhead and increased in Kernel
+complexity.
+
+2.4.7 Operating system uses user level thread and kernel
+level thread. User level threads are managed
+without kernel support. Operating system support
+and manage the kernel level threads.
+• Modern operating system support kernel level
+threads. Kernel performs multiple simultaneous
+tasks in operating system. In most of the
+application, user threads are mapped with kernel
+level threads.
+• Different methods of mapping is used in operating
+system are as follows :
+1. One to one
+2. Many to one
+3 . Many to many
+1 . One to one
+• In this model, one user level thread maps with one
+kernel level thread. If there are three user threads
+then system creates three separate kernel thread.
+This model provides more concurrency because of
+separate thread. Fig. 3.4.5 shows one to one
+mapping.
+• In this method, the operating system allocates data
+structure that represents kernel threads. Here
+multiple threads are run in parallel on
+multiprocessor system.
+• Number of threads in the system increases, the
+amount of memory required i s also increases.
+• Windows 95/XP and Linux operating system uses
+this one to one thread mapping.
+Only overhead in this method is creation of kernel
+level thread for user level thread. Because of this
+overhead, system performance is slowdown.
+2. Many to one
+• Many to one mapping means many user thread
+maps with one kernel thread. Fig. 3.4.6 shows many
+t o one mapping.
+Operating system blocks the entire multi-threaded
+process when a single thread blocks because the
+entire multi-threaded process is a single thread of
+control. So when operating system receive any a
+blocking 1/O request, it blocks the entire process.
+• Thread library handle thread management in user
+space. The many-to-one model does not allow
+individual processes to be split across multiple
+CPUS.
+• This type of relationship provides an effective
+context-switching environment, easily
+implementable even on simple kernels with no
+thread support.
+• Green threads for Solaris and GNU portable threads
+implement the many-to-one model in the past, but
+few systems continue to do so today.
+• Advantage: System performance is improved by
+customizing the thread library scheduling algorithm.
+3. Many to many
+• In the many to many mapping, many user-level
+threads maps with equal number of kernel threads.
+Fig. 3.4.7 shows many to many thread mapping.
+• Many to many mapping is also called M-to-N
+thread mapping. Thread pooling is used to
+implement this method.
+sers can create required number of thread and
+there i s no limitation for user. Again here blocking
+Kernel system calls do not block the entire process.
+• This model support for splitting processes across
+multiple processors.
+• Limitations: Operating system design becomes
+complicated.
+
+2.5 Execute Process Commands
+
+2.5.1 ps Command
+• The ps command is used to provide information
+about the currently running processes, including
+their process identification numbers (PIDs).
+• This command stands for Process Status:
+• A process, also referred to as a task, is a n executing
+instance of a program. Every process is assigned a
+unique PID b y the system.
+• The basic syntax of ps command :
+ps [options]
+• When ps is used without any options, it sends to
+standard output, which is the display monitor by
+default, four items of information for at least two
+processes currently on the system: the shell and ps
+• You can also check the process status of a single
+process, use the syntax: p s PID
+
+2.5.2 wait
+• The kernel keeps a small amount of information for
+every terminating process, s o that the information i s
+vailable when the parent of the terminating
+process calls wait or waitpid.
+• When a process terminates, either normally or
+abnormally, the kernel notifies the parent by
+sending the SIGCHLD signal t o the parent.
+• Because the termination of a child is an
+asynchronous event it can happen at any time while
+the parent is running this signal is the
+asynchronous notification from the kernel to the
+parent.
+• The parent can choose t o ignore this signal o r it can
+provide a function that is called when the signal
+occurs: a signal handler. The default action for this
+signal is to be ignored. For now, we need to be
+aware that a process that calls wait or waitpid can :
+1. Block, if all o f its children are still running.
+2. Return immediately with the termination status
+of a child, if a child has terminated and i s
+waiting for its termination status to be fetched
+3. Return immediately with an error, if it doesn't
+have any child processes.
+• If the process is calling wait because it received the
+SIGCHLD signal, we expect wait to return
+immediately, But if we call it at any random point
+in time, it can block.
+#include <sys/wait.h>
+pid_t waitint "statloc);
+pid_t waitpid(pid_t pid, int "statioc, int options);
+• A process can synchronize its execution with the
+termination of a child process by executing the wait
+system call.
+• The syntax for the system call is
+pid = wait (state_addr);
+where pid i s the process ID of the zombie child and
+stat addr is the address in user space of an integer
+that will contain the exit status code of the child.
+
+2.5.3 leep
+• When a process must temporarily suspend its
+execution, it does so of its own free will. An
+interrupt handler cannot go to sleep because if it
+could, the interrupted process would be put to sleep
+by default.
+• Processes go to sleep because they are awaiting the
+occurrence of some event, such as waiting for /O
+completion from a peripheral device, waiting for a
+process to exit, waiting for system resources to
+become available and so on.
+• Processes are said to sleep on an event, meaning
+that they are in the sleep state until the event
+occurs, at which time they wakeup and enter the
+state "ready to run".
+• When a process wakeup, it follows the state
+transition from the "sleep" state to the "ready to
+run" state, where it is eligible for later scheduling, it
+does not execute immediately.
+• Sleeping processes do not consume CPU resources.
+• Process executing in Kernel mode must sometimes
+lock a data structure in case it goes to sleep at a
+later stage. The Kernel implements locks in the
+following manner;
+while (condition is true)
+Sleep (event: the condition becomes false) :
+Set condition true;
+• It unlocks the lock and awakness all processes a
+sleep on the lock in the following manner:
+Set condition false;
+Wakeup (event: the condition is false
+
+2.5.4 exit
+• Processes o n a UNIX system terminate by executing
+the exit system call. The syntax for the call is
+exit (status);
+where the value of status is returned to the parent
+process for its examination.
+• The exit ( ) functions terminate the calling process.
+• The command causes the shell or program to
+terminate. If performed within an interactive
+command shell, the user is logged out of their
+current session
+terminal connection is disconnected.
+• Typically an optional exit code can be specified,
+which is typically a simple integer value that is then
+returned to the parent process.
+• exit 0 command closes all of a process's file
+descriptors, de-allocates its code, data and stack and
+then terminates the process.
+
+2.5.5 ill
+• The kill function sends a signal to a process or a
+group of processes. The raise function allows a
+process to send a signal to itself.
+The function prototype for kill and raise API :
+#include <signal.h>
+int kill(pid_t pid, int signo);
+int raise(int signo);
+Both return: 0 if OK, 1 on error
+• There are four different conditions for the pid
+argument t o kill.
+1. pid > 0: The signal is sent to the process
+whose process ID is pid.
+2. pid = = 0: The signal is sent to all processes
+whose process group ID equals the process
+group ID of the sender and for which the
+sender has permission t o send the signal.
+3 . pid < 0: The signal is sent to all processes
+whose process group IDequals the absolute
+value of pid and for which the sender has
+permission to send the signal.
+4 . pid = = 1: The signal is sent to all processes
+on the system for which the sender has
+permission to send the signal. As before, the
+set of processes excludes certain system
+processes.
+
+
+
+Unit 3: CPU Scheduling
+
+3.1 Scheduling Types
+ In a multiprogramming environment, usually more
+programs to be executed than could possibly b e run
+time at one time. In CPU scheduling it switches
+from one process to another process. CU resource
+management is commonly known as scheduling.
+• Objective of the multiprogramming is to increases
+the CPU utilization. CPU scheduling i s one kind o f
+fundamental operating system functions.
+• User program contains combination of CPU burst
+cycle and I/O burst cycles. Process starts with CPU
+burst cycle then I/O burst cycle again CPU burst
+cycle again I/O burst cycle. In this way the process
+completes its executions. Process will terminates
+after final CPU burst cycle completions.
+Program execution sequence: CPU burst cycle →
+I/O burst cycle → CPU burst cycle → I/O burst cycle
+→ CPU burst cycle → Program terminates.
+• A CPU bound process tends to use the processor
+time that the system allocates for it. An I/O bound
+n the sam a
+process tends to use the processor only briefly
+before generating an I/O request. The CPU bound
+processes spend most of their time using the
+processor.
+CPU Scheduler
+• CPU scheduler is also called as short scheduler.
+System programmers use
+parameters like
+program
+size, resources required for program and any other
+special devices are needed to determine scheduling
+policies.
+• Scheduling mechanism is the part of the process
+manager that handles the removal of the running
+process from the CP and the selection of another
+process o n the basis of a particular strategy.
+• Scheduler is responsible for multiplexing processes
+on the CPU.
+
+3.1.1 Preemptive and Non-preemptive
+Scheduling
+• The scheduling policy determines when it is time
+for process to be removed from the CPU and which
+ready process should be allocated the CPU next.
+The scheduling mechanism is composed of several
+different parts, depending on exactly how it is
+implemented in any particular operating system.
+• CPU scheduling is divided into two types :
+Preemptive scheduling and non-preemptive
+scheduling-
+• Preemptive scheduling: A scheduling method that
+interrupts the processing of a process and transfers
+the CPU to another process is called a preemptive
+CPU scheduling. The process switches from running
+state to the ready state and waiting state to the
+ready state.
+• Non-preemptive scheduling : Non-preemptive
+operation usually proceeds towards completion
+uninterrupted. Once the system has assigned a
+processor to a process, the system cannot remove
+that processor from the process. The process
+switches from running state to the waiting state and
+termination o f process.
+• Preemptive scheduling increases the cost and it has
+higher overheads. This scheduling method is useful
+only in the high priority processes require rapid
+response.
+• Non-preemptive scheduling is simple t o implement.
+It requires some hardware platform. This method i s
+attractive because of its simplicity. Windows 3.1 and
+Apple Macintosh operating system uses this
+scheduling method.
+
+3.1.3 CPU Scheduling Criteria
+Board Questions
+• Depending on the system, CPU scheduling criteria will change
+1. Throughput: CPU scheduling should attempt to
+service the maximum number of processes per unit time. The higher is the number, the more work is done by the system.
+2. Waiting time: The average period of time a
+process spends waiting. Process is normally in the ready queue in waiting time.
+3. Turnaround time: Turnaround time start from
+process submission to completion of process. Turnaround time = Burst time + Waiting time
+4. Response time: It is the time from the
+submission of a request until the first response is produced.
+5. CPU utilization: It is average function of time during which the processor is busy.
+6. Fairness: Avoid the process from the starvation. All the processes must be given equal opportunity to execute.
+7. Priority : If the operating system assigns
+priorities to processes, the scheduling mechanism
+should favor the higher priority processes.
+it
+8. Predictability: A given process always should
+run in about the same amount of time under
+similar system loads.
+• Depending upon the nature of operations the
+scheduling policy may differ. The CPU utilization
+and throughput are the system centered parameters.
+Fairness i s affect by user and system.
+
+3.1.4 Dispatcher
+• Using dispatcher, CPU selects the process from the
+short term scheduler. Functions o f the dispatcher is
+a s follows:
+1 . Switching context 2 . Switching to user mode
+3. Jump to proper location in the user program
+for restarting that program.
+• Dispatcher is a small program that switches the
+processor from one process to another.
+• Dispatch Latency : It is time taken by dispatcher to
+stop running one process and start other process
+running is called a s dispatch latency.
+
+3.2 Types of Scheduling Algorithms
+• CPU scheduling algorithms are a s follows :
+1. First I n First Out (FIFO) scheduling
+2. Shortest job first scheduling
+3 . Priority scheduling
+4 . Round robin scheduling
+
+
+3.2.1 irst Come First Serve Scheduling
+• This method of scheduling means that the first
+process to request the processor gets it until it
+finished execution. With this algorithm, processes
+are assigned the CPU in the order they request it.
+• Normally there is a single queue of ready processes.
+When the first process enters the system from the
+outside, it is started immediately and allowed to
+run a s long a s it wants it. At the same time, other
+process enters into the system; they are put onto the
+end of the queue.
+• New process enters the tail of the queue and the
+schedule selects the process from the head of the
+• When new process enters into the system, its
+process control block is linked to the end of the
+ready queue and it i s removed from the front of the
+queue.
+• When a process waits or blocks, it is removed from
+the queue and it queues up again in FCFS queue
+when it gets ready.
+• FCFS is non-preemptive CPU scheduling algorithm.
+It is also called First In First Out method (FIFO).
+• FCFS is simple to implement because it uses a FIFO
+queue. This algorithm is fine for most of the batch
+operating systems.
+• FCFS is not useful in scheduling interactive
+processes because it cannot guarantee short
+response time. This algorithm performs much
+better for long processes than short ones.
+• Turnaround time is unpredictable with the FCFS
+algorithm. Average waiting time of the FCFS is
+often quite long.
+• Real life analogy is buying tickets.
+Convey effect
+• To reduce I/O device utilization, all I/O bound
+processes will be waiting excessively long for
+processor bound ones. This is called as convey
+effect.
+• If one process monopolizes the system, the extent of
+its overall effect on system performance depends on
+the scheduling policy and whether the process is
+processor bound or I/O bound.
+Advantages
+1. Simple to implement
+2. Fair
+Disadvantages
+1. Waiting time depends o n arrival order
+2. Convoy effect: short process stuck waiting for
+long process
+3. Also called head o f the line blocking
+
+3.2.2 Shortest Job First Scheduling
+• Shortest job first scheduling algorithm is also
+known as Shortest Job Next (SJN) scheduling
+algorithm. It handles the process based on length of
+their CPU cycle time. It reduces average waiting
+time over FIFO algorithm.
+• SJF is a non-preemptive CPU scheduling algorithm.
+• It does not work in interactive system because users
+do not estimate in advance the CPU time required
+t o run their processes.
+• SJF scheduling algorithm is used frequently in long
+term scheduling.
+• When a process request a CPU, it must inform the
+system for how long it wants to use the CPU.
+• When CPU become available, the system allocates
+into processes with the least expected execution
+time.
+• To break ties, it follows the FCFS algorithm.
+• Preemptive version of SJF is called as Shortest
+Remaining Time Next (SRTN)
+Preemptive SJF algorithm will preempt the currently
+exceutig process, whereas a non preemptive SJF
+algorithm will allow the currently running process
+to finish its CPU burst.
+• SIF selects
+processes for
+service in a manner
+ensuring the next one will complete and leave the
+system a s soon a s possible.
+• The SJF scheduling algorithm is optimal only when
+all of the processes are available at the same time
+and the CPU estimates are available.
+• SJF scheduling algorithm may be preemptive or
+non-preemptive.
+
+3.2.3 Priority Scheduling
+• Priority CPU scheduling algorithm is preemptive
+and non-preemptive algorithm. It is one o f the most
+common scheduling algorithm in batch system.
+Priority can be assigned by a system admin using
+characteristics of the process.
+• In this scheduling algorithm, CPU select higher
+priority process first. If the priority of two process
+is same then FCFS scheduling algorithm is applied
+for solving the problem.
+• The priority of a process determines how quickly its
+request for a CPU will be granted if other processes
+make competing requests.
+• Each process is assigned a priority number for the
+purpose of CPU scheduling.
+• The priority number is normally a non negative
+integer number.
+• Non preemptive priority scheduling algorithm will
+simply put the new process at the head of the ready
+queue.
+• Preemptive priority scheduling algorithm will
+preempt the CPU if the priority of the newly
+arrived process is higher than the priority of the
+currently running process.
+Problem with Priority Scheduling
+• Waiting time is more for lower priority process
+even if there required CPU burst time is less.
+Priority scheduling algorithm faces the starvation
+problem. Starvation problem can be solved by using
+aging techniques.
+• In aging, the priority of the process will increase
+which i s waiting for long time in the ready queue.
+
+3.2.4 Round Robin Scheduling
+• Round robin is a preemptive scheduling algorithm.
+It is used in interactive system.
+• Here process are given a limited amount of time of
+processor time called a time slice o r time quantum.
+If a process does not complete before its quantum
+expires, the system preempts it and gives the
+processor to the next waiting process. The system
+then places the preempted process at the back of
+the ready queue.
+• Processes are placed in the ready queue using a
+FIFO scheme. With the R R algorithm, the principle
+design issue is the length of the time quantum to be
+used. For short time slice, processes will move
+through the system relatively quickly. It increases
+the processing overheads.
+
+3.2.7 Shortest Remaining Time Next
+• Preemptive SJF is called shortest remaining time first. In this algorithm, the scheduler selects the process
+with the smallest estimated run time to completion.
+• This scheduler gives minimum wait times in theory but in certain situation due to preemption
+overhead, shortest process first might performance better.
+• An advantageous of this method is that, the short processes are handled very quickly. The system
+requires very little overhead since it only makes a decision when a process completes or a new
+process is added. When a new process is admitted the SRTN algorithm only needs to compare the
+currently executing process with the new process, ignoring all other processes currently waiting to
+execute.
+Advantages :
+1. Very short processes get very good service.
+2. The penalty ratios are small; this algorithm
+works extremely well in most cases
+3 . This algorithm provably gives the highest
+throughput of all scheduling algorithms if the
+estimates are exactly correct.
+
+3.2.8 Multilevel Queue Scheduling
+• Multilevel queue is not separate scheduling
+algorithm but it works in conjunction with several
+CPU scheduling algorithms. The processes can be
+grouped according t o common characteristics.
+• One type of multilevel queue is based on the
+priority based system with different queues for each
+priorty level.
+• System consists of two types of processes or jobs :
+Interactive and batch. Interactive jobs are shorter
+and batch jobs are longer. Fig 421 shows
+multilevel queue scheduling.
+• To keep minimum response time for user,
+interactive jobs are scheduled before the batch jobs.
+So ready queue is partitioned into two separate
+queue: interactive (foreground) and batch
+(background). Each queue uses their own
+scheduling algorithm.
+Once the jobs assigns to the queue, it will remain in
+that queue. Jobs never change the queue. Here we
+assume that FCFS is applied to one queue and
+round robin method is applied to another queue.
+• The batch jobs are put in one queue called the
+background queue while the interactive jobs are put
+in a foreground queue. Batch jobs are scheduled by
+first come first serve method and interactive jobs by
+round robin method.
+• The scheduler now has to decide which queue to
+run. The methods are as follows:
+1. Higher priority queues can be processed until
+they are empty before the lower priority
+queues are executed.
+2. Each queue can be given a certain amount of
+the CPU. Maybe, the interactive queue could
+be assigned 75% of the CPU, with the batch
+queue being given 25 %.
+• It should also be noted that there can be many
+other queues. Many systems will have a system
+queue. This queue will contain processes that are
+important to keep the system running. For this
+reason these processes normally have the highest
+priority.
+• It should be also need to specify which queue a
+process will be put to when it arrives to the system
+and/or when it starts a new CPU burst.
+Advantages:
+1. It can be preemptive o r non-preemptive.
+2. Short CPU bound processes are executed first.
+3. Simple t o implement.
+Disadvantage:
+1. Queues require monitoring, which is a costly
+activity.
+
+3.2.9 Multilevel Feedback Queue Scheduling
+• Multilevel Feedback Queue (MLFQ) allows moving
+the processes between the queues. MLFQ has a
+number of distinct queues; cache assigned a different
+priority level. At any given time, a process that is
+ready to run is on a single queue. MLFQ uses
+priorities to decide which process should run at a
+given time. A process with higher priority i s
+selected for execution.
+• Consider processes with different CPU burst
+characteristics. If a process uses too much of the
+CPU it will be moved to a lower priority queue.
+This will leave I/O bound and interactive processes
+in the higher priority queue.
+• Fig. 4.2.2 shows multilevel feedback queue
+scheduling.
+MLFQ also uses concept of aging to prevent
+starvation. The processes with lower priority will
+move towards the higher priority queue in aging
+concept. The key to MLFQ scheduling lies in how
+the scheduler sets priorities. Rather than giving a
+fixed priority to each process, MLFQ varies the
+priority of a process based on its observed behavior.
+• Assume we have three queues (Q0, Q 1 and Q2). Q0
+is the lowest priority queue and Q2 is the highest
+priority queue. The process enters at the highest
+priority (Q2). After a single time-slice of 10 ms, the
+scheduler reduces the process's priority by one, and
+thus the job is on Q1. After running at Ql for a
+time slice, the job is finally lowered to the lowest
+priority in the system (QO), where it remains.
+• Following parameters are defined by scheduler for
+implementing MLFQ:
+1 . Number of queue required.
+2. Scheduling algorithm for each queue.
+3. Method is required for finding to increase
+and/or decrease priority o f processes
+
+3.3 Deadlock
+
+3.3.1 system Model
+• A lack of process synchronization can result in two
+extreme conditions are deadlock or starvation.
+Deadlock is the problem of multiprogrammed
+system.
+• Deadlock can b e defined as the permanent blocking
+of a set of processes that either complete for system
+resources. Deadlock is more serious than starvation.
+• Deadlock can occur on sharable resources such as
+files, printers, database, disks, tape drives, memory,
+CPU cycles etc.
+• A process i s in deadlock state if it was waiting for a
+particular event that will not occur. In a system
+deadlock, one o r more processes are deadlocked.
+Deadlock Example
+• Computer system is collection of limited/finite
+number o f resources. These resources are distributed
+among a number o f competing processes.
+Resources are of two types :
+1. Reusable resources
+2. Consumable resources.
+• Reusable resource is used only by one process at a time. Process can release resource after use.
+Processors, I/O channel, I/O device, files, database, primary and secondary memory, semaphore are
+example of the reusable resource.
+• Consumable resource is one that can be created and destroyed. There is no limit on the number of
+consumable resources o f a particular type.
+• An interrupt, messages, signals and messages in I/O buffers are examples of consumable resources.
+• Process utilize the resources in the following sequence :
+1. Request for resource
+2 . Use of resource
+3 . Resource release.
+• Process uses system call for requesting the resource. After allocating resource to the process, it use or
+operate the resource.
+• The process releases the resource after use.
+• If the resource i s not available when it i s requested, the requesting process i s forced to wait.
+• Fig. 4.3.1 shows the deadlock with 4 process. 
+Process 1 is holding resource 1 and requesting resource 2; process 2 is holding resource 2 and
+requesting resource 3; process 3 is holding resource 3 and requesting resource 4. Process 1 is holding
+resource 4 also.
+• Here deadlock occurs because none of the processes can proceed because all are waiting for a
+resource held by another blocked process.
+• To break this situation, one of the process release the resource.
+• Operating system must be handle the deadlock situation. OS detect the deadlock and solve the
+deadlock problems
+
+3.4.3 Necessary Condition for Deadlock
+• Following four conditions are necessary for
+deadlock to exist.
+1. Mutual exclusion 2 . Hold and wait
+3. No preemption 4 . Circular wait
+1. Mutual exclusion : A resource may be acquired
+exclusively by only one process at a time.
+2. Hold and wait: Processes currently holding
+resources that were granted earlier can request
+new resources.
+3. No preemption : Once a process has obtained a
+resource, the system cannot remove it from the
+process control until the process has finished
+using the resource.
+4. Circular wait: A circular chain o f hold and wait
+condition exists in the system.
+ll four of these conditions must be present for a
+resource deadlock to occur. If one of them is absent,
+n o resource deadlock is possible.
+
+4.3.4  Deadlock Handing- Deadlock Prevention
+• To prevent a deadlock, the OS must eliminate one
+o f the four necessary conditions.
+1. Mutual exclusion 2 . Hold and wait
+3 . No preemption 4 . Circular wait
+1. Mutual exclusion: It is necessary in any computer
+system because some resources (memory, CPU)
+must be exclusively allocated to one user at a
+time. No other process can use a resource while
+i t is allocated t o a process.
+2. Hold and wait: If a process holding certain
+resources is denied a further request, it must
+release its original resources and if required
+request them again.
+3. No preemption: It could be bypassed by allowing
+the operating system to deallocate resources from
+process.
+4. Circular wait: Circular wait can be bypassed if
+the operating system prevents the formation of a
+circle.
+• A deadlock is possible only if all four of these
+conditions simultaneously hold in the system.
+• Prevention strategies ensure that at least one of the
+conditions is always false.
+
+3.4.5 Deadlock Avoidance
+ Deadlock avoidance depends on additional
+information about the long term resource needs of
+each process. The system must be able to decide
+whether granting a resource is safe o r not and only
+make the allocation when it is safe.
+• Fig. 4.3.9 shows safe and unsafe state.
+When a process is created, it must declare its
+maximum claim, ie. the maximum number of unit
+resource. The resource manager can grant the
+request if the resources are available.
+For example, if process 1 requests a resource held by process 2 then make sure that process 2 is not
+waiting for resource head by first process 1.
+
+3.3.5.1 anker's Algorithm
+• Banker's algorithm is the deadlock avoidance algorithm. Banker's is named because the algorithm is
+modeled after a banker who makes loads from a pool of capital and receives payments that are
+returned to that pool.
+• Algorithm is check to see if granting the request leads to an unsafe state. If it does, the request is
+denied. If granting the request leads to a safe state, it is carried out.
+• The Dijkstra proposed an algorithm to regulate resource allocation to avoid deadlocks. The banker's
+algorithm is the best known of the avoidance method.
+• B y using avoidance method, the system is always kept in a safe state.
+• It is easy to check if a deadlock is created by granting a request, deadlock analysis method i s used for
+this.
+• Deadlock avoidance uses the worst-case analysis method to check for future deadlocks.
+• Safe state: There is at least one sequence of resource allocations to processes that does not result in a
+deadlock.
+• System is in a safe state only if there exist a safe sequence. A safe state i s not a deadlocked state.
+• Deadlocked state is a n unsafe state. It does mean the system is in a deadlock.
+• A s long as the state is safe, the resource manager can be guaranteed t o avoid a deadlock.
+• Initially the system i s in a safe state. When process requests a resource and that resource i s available
+then the system must decide whether the resources can be allocated immediately or process must
+wait.
+• If system remains in safe state after allocating resource then only O S allocates resources to process.
+• Banker algorithm uses following data structures.
+1. Allocation: Allocation is a table in which row represents process and column represents resources (R).
+alloc [i, il = Number o f unit o f resource R; held b y process Pi-
+2. Max: Max be the maximum number of resources that process requires during its execution.
+• Need (claim) : It i s current claim of a process, where a process's claim i s equal t o its maximum need
+minus its current allocation.
+Need = Max - Allocation
+• Available : There will b e number of resources still available for allocation. This is equivalent to the
+total number of resources minus the sum of the allocation t o all processes in the system.
+Available = Number of resources - Sum o f the allocation t o all process
+- Number of resources - Allocation (P)
+• Each process cannot request more that the total number of resources i n the system. Each process must
+also guarantee that once allocated a resource, the process will return that resource to the system
+within a finite time.
+Weakness of Banker's algorithm
+1. It requires that there be a fixed number of resources to allocate.
+2. The algorithm requires that users state their maximum advance. needs (request) in
+3. Number of users must remain fixed.
+4. The algorithm requires that the bankers grant all requests within a finite time.
+5. Algorithm requires that process returns all resource within a finite time.
+
+
+Unit 4: Memory Management
+
+4.1 Basic Memory Management
+The memory management modules of an operating system are concerned with the management of primary memory. In a multiprogramming system, the user part of memory must be further subdivided to accomodate multiple processes. The task of subdivision is carried out dynamically by the operating system and is known as memory management.
+Memory consists of a large array of words or bytes each with its own address. Memory that the processors directly access for instructions and data.
+
+4.1.1 Functions of Memory Management
+1. Keeping track of the status of each memory
+location. Whether the memory location is
+allocated or free.
+2. Determining allocation policy for memory.
+3. Memory allocation technique, memory allocation
+information must be updated.
+4. Deallocation technique and policy. A process
+nay release the allocated memory
+• Central processing unit fetches instructions from
+memory according to the value o f program counter.
+These instructions may cause additional loading
+from and storing to specific memory addresses. In
+this section, we discuss the memory related
+parameters like address binding, physical address,
+logical address and dynamic loading etc.
+
+4.1.2 Swapping
+• Keeping all processes in memory all the time
+requires a large amount of main memory. For
+execution of the process, it must be swapped.
+• Swapping is method of temporarily removing
+inactive process/programs from the physical
+memory.
+• Inactive program means, which is neither executing
+on the CPU, nor performing an I/O operation.
+• Fig. 5.1.4 shows swapping.
+When process P2 send requests for an 1/O
+operation, OS blocked Pz process and will not
+return to the ready state for long period of time.
+Process P is in blocked state. Process manager
+place the process P2 in blocked state and inform t o
+the memory manager regarding this action.
+• Process manager moves a blocked process P 1 into
+the ready state and inform to memory manager.
+Process P, is loaded into main memory by memory
+manager when there is space available.
+• Swapped out process is stored on the secondary
+storage disk. It contains executable image with code,
+data and stack.
+• Relocation hardware supports for swapping.
+Because o f address binding problem, swapping i s
+difficult without relocation hardware.
+• Round robin and priority based CPU scheduling
+algorithm uses the swapping concept.
+• Time sharing system uses swapping. In time
+sharing, kernel can estimate when a program is
+likely to b e scheduled next.
+ swapped out process will occupy same memory
+location when process swap in by OS. But this
+totally depends on address binding. If address
+binding is load time or assembly time, then
+swapped out process uses same memory location
+when swap-in. But execution-time binding uses
+different memory location.
+• Secondary storage is required to implement the
+swapping technique.
+• Content switching time increases when swapping
+increases. Major part of the swap time is transfer
+time. Swapping increases the operating system
+overhead due to the disk I/O involved.
+• When swapping creates multiple holes in memory,
+it is possible to combine them all into one by
+moving all the processes to one side of memory.
+This technique is known as memory compaction.
+• Compaction requires a lot of CPU time, so most
+operating systems not used this technique.
+• Compaction means movement of processes in the
+memory during their execution. It is sometimes
+called dynamic relocation of a program.
+
+4.2 Fixed Partitioning
+• In a fixed size partitioning of the main memory all
+partitions are of the same size. The operating
+ystem divides main memory into a number of
+fixed size partition. Each partition holds a single
+program.
+• Fixed sized partitions are relatively simple to
+implement. Degree of multiprogramming depends
+o n the number o f partitions.
+• Normally main memory is divided into two
+partitions:
+1 . For resident program 2. For user processes
+• Batch operating system uses the fixed size partition
+scheme. The operating system keeps the record of
+memory allocation and deallocation in the form of
+table. Initially all the memory is available for user
+processes.
+• When the process arrives in the system and needs
+memory, operating system search for large hole for
+this process. Hole is one large block of free
+available memory. If any free hole i s found, process
+is allocated to the free hole of memory a s is needed.
+• After allocating number of holes for the processes, a
+set of various size holes is scattered throughout
+memory at any given time. When a process arrives
+and searches for (memory) set of holes. But the
+holes must be large enough to accomodate the
+process.
+• Fixed sized partitions are simple to implement. Any
+process whose size is less than or equal to the
+partition size can be loaded into any available
+partition.
+• Fig. 5.2.1 shows an example of fixed partitioning of
+a memory.
+There are two difficulties with the use o f equal size
+fixed partitions:
+1 . A program may be too big to fit into a partition.
+2 . Memory utilization is extremely inefficient.
+First difficulty is solved by using overlays. Overlays
+involves moving data and program segments in and
+out o f memory.
+Advantages and disadvantages of fixed partition
+1) Advantages
+1. Simple to implement.
+2. Does not require expertise t o understand and use
+such a system.
+3. Less overhead.
+2) Disadvantages
+1. Memory is not fully utilized.
+2. Poor utilization of processors.
+3 . User's process being limited to the size of
+available main memory.
+4. Requires contiguous loading of entire program
+
+4.2.1 ynamic Memory Partitions
+• Memory
+partitions are of variable length and
+number. Processes are loaded into the size nearest
+to its requirements.
+• Fig. 5.2.2 shows the effect of dynamic memory
+partitioning. Initially in main memory, only OS is
+loaded and rest of the memory is free. Memory size
+is 6 4 Mbytes. How the process is loaded with
+dynamic partitions is shown below. After loading
+all the process some free space remains a t one side
+of the memory.
+• Four process/programs are loaded into memory.
+These program starts loading where the O S ends.
+After loading four programs, it leaves a hole at the
+end of memory that is too small for a next process.
+• Operating system swap out program 2 and leaves
+sufficient room to load new program into memory.
+The size of newly loaded program is smaller than
+the program in memory. Again another small hole
+is created.
+
+
+4.3 Variable Partitioning
+• The use of unequal size partitions provides a degree
+of flexibility to fixed partitioning. In dynamic
+partitioning, the partitions are of variable length
+and number.
+• I n noncontiguous memory allocation, a program is
+divided into blocks that the system may place in
+nonadjacent slots in main memory.
+• This allocation method do not suffer from internal
+fragmentation, because a process partition is exactly
+the size o f the process.
+• Fig. 5.3.1 shows noncontiguous memory allocation
+method. Operating system maintain the table which
+contains the memory areas allocated to process and
+free memory. Memory management unit use this
+information for allocating processes.
+• Table contains information about memory starting
+address for process/program and their size.
+• CPU sends the logical address of the process to the
+MMU and the MMU uses the memory allocation
+information stored in the table for calculating logical
+address. We called this address as effective memory
+address of the data/instruction.
+
+4.3.2 Fragmentation
+• Fragmentation are of two types :
+1. Internal fragmentation.
+2. External fragmentation.
+• In fragmentation, OS cannot use certain area of
+available memory.
+Internal fragmentation
+• There is wasted space internal to a partition due to
+the fact that the block of data loaded is smaller than
+the partition i s called as internal fragmentation.
+• Fig. 5.3.2 shows a n internal fragmentation
+To keep track of this free hole is overhead for
+system.
+External fragmentation
+• It occurs when enough total main memory space
+exists to satisfy a request, but it is not contiguous,
+storage is fragmentated into a large number of
+small holes.
+• Fig. 5.3.3 shows external fragmentation.
+Following are the solution for the external
+fragmentation:
+1. Compaction
+2. Logical address space o f a process/program
+
+4.3.4 Compaction
+• Compaction solves problem of
+fragmentation. Fig. 5.3.4 shows compaction. Operating system moves all the free holes to one
+side of main memory and creates large block of free
+size.
+• It must be performed on each new allocation of
+process to memory or completion of process for
+memory. System must also maintain relocation
+information.
+• All free blocks are brought together as one large
+block of free space. Compaction requires dynamic
+relocation.
+• Compaction has a cost and selection of an optimal
+compaction strategy is difficult. One method for
+compaction is swapping out those processes that are
+to be moved within the memory and swapping
+them into different memory locations.
+• Compaction is not always possible. Compaction is
+time consuming method and wastage of the CPU
+time.
+Garbage collection
+• Some programs use dynamic data structures. These
+programs dynamically use and discard memory
+space. Technically, the deleted data items release
+memory locations.
+• But, in practice the OS does not collect such free
+space immediately for allocation. This is because 
+hat affects performance. Such areas, therefore are
+called garbage.
+• When such garbage exceeds a certain threshold the
+OS would not have enough memory available for
+any further allocation.
+
+4.3.5 Placement Algorithms
+• In an environment that supports dynamic memory
+allocation, the memory manager must keep a record
+of the usage of each allocatable block of memory.
+This record could b e kept by using almost any data
+structure that implements linked lists.
+• An obvious implementation i s t o define a free list of
+block descriptors, with each descriptor containing a
+pointer t o the next descriptor, a pointer t o the block
+and the length of the block.
+• The memory manager keeps a free list pointer and
+inserts entries into the list in some order conductive
+to its allocation strategy. A number of strategies are
+used to allocate space to the processes that are
+competing for memory.
+• Fig. 5.3.5 shows the placement algorithm.
+1. Best fit: The allocator places a process in the
+smallest block of unallocated memory in which it
+will fit. For example, suppose a process requests
+12 kB of memory and the memory manager
+currently has a list of unallocated blocks of 6 kB,
+4 kB, 19 kB, 11 kB and 13 kB blocks. The best-fit
+strategy will allocate 1 2 kB of the 1 3 kB block to
+the process.
+• Best fit chooses the block that is closest in the size
+t o the request.
+Problems of best fit
+• It requires a n expensive search of the entire free list
+to find the best hole.
+• More importantly, it leads to the creation of lots of
+little holes that are not big enough to satisfy any
+requests. This situation is called fragmentation and is
+a problem for all memory-management strategies,
+although it is particularly bad for best-fit.
+Solution: One way to avoid making little holes
+is to give the client a bigger block than it asked
+for. For example, we might round all requests up
+to the next larger multiple of 64 bytes. That
+doesn't make the fragmentation go away, it just
+hides it. Unusable space in the form of holes is
+called external fragmentation.
+2 . Worst fit: The memory manager places
+process in
+the largest block of unallocated
+memory available. The idea i s that this placement
+will create the largest hold after the allocations,
+thus increasing the possibility that compared to
+best fit; another process can use the remaining
+space. Using the same example as above, worst
+fit will allocate 1 2 kB of the 19 kB block to the
+process, leaving a 7 kB block for future use.
+3. First fit : There may be many holes in the
+memory, so the operating system, to reduce the
+amount of time it spends analyzing the available
+spaces, begins at the start of primary memory
+and allocates memory from the first hole it
+encounters large enough to satisfy the request.
+Using the same example as above, first fit will
+allocate 12 kB of the 14 kB block to the process.
+4. Next fit: The first fit approach tends to fragment
+the blocks near the beginning of the list without
+considering blocks further down the list. Next fit
+is a variant of the first-fit strategy. The problem
+of small holes accumulating is solved with next
+fit algorithm, which starts each search where the
+last one left off, wrapping around to the
+beginning when the end of the list is reached ( a
+form of one-way elevator).
+Notice in the diagram above that the best fit and
+first fit strategies both leave a tiny segment of
+memory unallocated just beyond the new process.
+
+4.4 Free Space Management Techniques
+• Space that is allocated t o files must b e managed and
+space which is not allocated to any file must be
+managed. To keep track of free disk space, the
+system maintains a free space list. File allocation
+table and disk allocation both are required to
+manage free space properly.
+• When a file is deleted, its disk space is added to the
+free-space list.
+• Following are the techniques used for free space
+management:
+1. Bit tables or bit vector
+2. Chained free portions or linked list
+3. Indexing o r grouping
+4. Free block list or counting
+1. Bit tables or bit vector
+• Each block on the disk is represented by bit. It uses
+vector chain for blocks. Free block is represented b y
+o and used block represented by 1 .
+• For example, consider a disk where blocks 3, 4, 5, 7,
+9, 14, 15, 19, 30, 31, 32, 35, 36, 37, 3 8 are free blocks
+and rest of the blocks are allocated. The free space
+is shown below:
+111000101011110011101111111111000110000
+• The memory required for a block bitmap = Disk
+size / 8 x (block size of file system)
+• Bit map requires extra space. For example :
+Block size = 2'2 bytes
+Disk size = 230 bytes
+Block number (n) = Disk size
+230 bytes
+= 212 bytes
+When bit table is stored into the memory, then
+exhaustive search of the table can slow file system
+performance. Most of the file system use auxiliary
+data structure for bit table. File system also
+maintain summary table. Summary table contains
+sub-range, number of free blocks and maximum
+sized contiguous number of free blocks.
+• Summary table is used to store information about
+contiguous free blocks. Whenever file system needs
+a number of contiguous blocks, it can scan the
+summary table to find an appropriate sub-range
+and then search that sub-range.
+• This method is used in Apple Macintosh.
+Advantage:
+a. Easy to find a free blocks
+b. It is a s small as possible.
+Disadvantage:
+It may not b e feasible t o keep the bitmap i n memory
+for large disks.
+2. Link list
+• I n this method, all free space disk blocks are linked,
+keeping a pointer to the first free block. All file
+allocation methods used link list free space
+techniques.
+• There is small space overhead because there is no
+need for a disk allocation table. In the above
+example, free blocks are 3, 4, 5, 7, 9, 14, 15, 19, 30,
+31, 32, 35, 36, 37, 38. Here free block pointer is on
+block number 3. Block 3 contains pointer to block 4,
+block 4 contains pointer to block 5 and block 5
+contains pointer t o block 7 and so on.
+• This method is not efficient because to reach free
+block 9 , we have to traverse block 3, 4, 5 and 7 then
+w e will reach to block 9.
+• Disk will become quite fragmented after some use.
+Many portions will b e a single block long.
+3. Grouping
+• First free block contains the addresses of n free
+blocks. The first n-1 of these blocks is actually free.
+The last block also contains the address of another
+n free block.
+• Consider the free blocks: 3, 4, 5, 7 , 9, 14, 15, 19, 30,
+31, 32, 35, 36, 37, 38
+
+4.5 irtual Memory
+• Virtual memory is a method of using hard disk
+space to provide extra memory. It simulates
+additional main memory.
+• In Windows operating system, the amount of virtual
+memory available equals the amount of free main
+memory plus the amount of disk space allocated to
+the swap file.
+• Fig. 4.8.1 shows logical view of virtual memory
+concept.
+A swap file is an area of your hard disk that is set
+aside for virtual memory. Swap files can be either
+temporary or permanent.
+irtual memory is stored in the secondary storage
+device. It helps to extend additional memory
+capacity and work with primary memory to load
+applications. The virtual memory will reduce the
+cost of expanding the capacity of physical memory.
+The implementations of virtual memory will
+different for operating systems to operating system.
+• Each process address space is partitioned into parts
+that can be loaded into primary memory when they
+are needed and written back to secondary storage
+otherwise. Address space partitions have been used
+for the code, data and stack identified by the
+compiler and relocating hardware. The portion of
+the process that is actually in main memory at any
+time is defined to be the resident set of the process.
+• The logical addressable space is referred to a s
+virtual memory. The virtual address space is much
+larger than the physical primary memory in a
+computer system. The virtual memory works with
+the help of secondary storage device and its speed
+is low compared t o the physical storage location.
+• Virtual memory uses two types of addresses :
+Virtual address and physical address.
+• Virtual address is referred by process and physical
+address is actual address of the main memory.
+• Whenever a process accesses a virtual address, the
+system must translate it to a physical address.
+Virtual memory system uses special purpose
+hardware. This hardware is called as memory
+management unit.
+• Most virtual memory system use a technique called
+paging. The virtual address space is divided into
+fixed size units called pages. The corresponding
+units in the physical memory are called page
+frames. The pages and page frames are normally
+the same size. The area on a hard disk that stores
+page frames is usually called the paging file or the
+swap file.
+• Fig. 5.5.2 shows concept of virtual memory.
+• When the system is ready to run a process, the
+system loads the process code and data from
+secondary storage into primary memory. Only a
+small portion of these needs to be in primary
+memory at once for the process to execute. The
+success of implementing virtual memory system is
+how to map virtual addresses t o physical addresses.
+Because processes reference only virtual addresses.
+Virtual memory can be implement in one o f two ways :
+1 . Paging 2. Segmentation
+ Following are the situations, when entire program is not required to load fully.
+1. User written error handling routines are used only when an error occurs in the data or
+computation.
+2. Certain options and features o f a program may b e used rarely.
+3. Many tables are assigned a fixed amount of address space even though only a small amount of the
+table i s actually used.
+4. Many routines are commonly used at mutually exclusive times during a run.
+• Virtual memory makes the task of programming much easier. Virtual memory is commonly
+implemented by demand paging. Virtual memory mechanism bridges the size and speed gaps
+between the main memory and secondary storage and is usually implemented in part by software
+technique.
+Benefits
+1. Less 1/O needed to load/swap a process.
+2. Degree of multiprogramming can be increased.
+3. A program's logical address space can be larger
+than physical memory.
+
+4.6 Paging 
+ In paging, operating system divides each incoming
+programs into pages of equal size. The sections of a
+disk are called block or sectors. The sections of
+main memory are called page frames. One sector
+will hold one page of job instructions and fit into
+one page frame of memory.
+• In paging, logical address space of a program
+can be noncontiguous. It solves
+external
+fragmentation problem.
+• The relation between virtual addresses and
+physical memory addresses given by page table.
+• Fixed sized blocks are called frames and breaking of
+logical memory into blocks of same size called
+pages.
+• Memory manager prepares following things before
+executing a program:
+1. Find out the number o f pages in the program.
+2. Free space in the main memory.
+3. Loading o f all the programs pages into memory.
+• Pages are not loaded continuously in main memory.
+Each page can be stored in any available page
+frame anywhere in main memory. Memory manager
+keeps the track of pages of program. Paging avoids
+external fragmentation and need for compaction.
+• Memory manager uses three tables to keep track of
+process and memory.
+. Job table : It stores the size of the active job
+and memory location where its page table is
+stored.
+2. Page map table: It contains vital information
+about each page. PMT contains apage number
+and corresponding page frame memory
+address. It includes only one entry per page.
+Page numbers are in sequential order.
+3. Memory map table : MMT is used to store
+page frame location and its status.
+• Page size depends upon underlying hardware.
+Operating system maintains a page table for each
+process. The page table shows the frame location for
+each page of a process. Fig. 5.6.1 shows the virtual
+address format for paging system.
+Processor hardware performs the logical to physical
+address translation. Logical address contains page
+number and offset. The physical address contains
+frame number and offset. Offset is a relative factor.
+I t i s used t o locate that line within its page frame.
+• Fig. 5.6.2 shows address translation.
+Suppose a system uses n-bit for representing both
+physical and virtual address. The page number is
+represented by the most significant bit (n - m bits)
+and the displacement i s represented by m bit.
+• The table, which holds virtual address to physical
+address translations is called page table. As
+displacement is constant, so only translation of
+virtual page number to physical page is required
+Fig 5.6.3 shows paging hardware. CPU generates
+logical addresses containing page number and an
+offset. This page number is used to retrieve the
+frame number from a page table which gives the
+base address s o the physical address is calculated a s
+base + offset.
+• Paging implementation requires CPU and operating
+system support. Page table may itself be resident in
+main memory.
+• Active process is loaded into memory and it
+occupies number of pages. This set of pages forms
+its resident set. Hardware defined the page size.
+• The processor generates virtual (logical) address and
+it consists of two parts:
+1 . Page number 2 . Page offset
+• Page table contains page number and index frame
+number. Page number is used as an index into a
+page table.
+• In case of simple partition, a logical address is the
+location of a word relative to the beginning o f the
+program the processor translates that into a real
+address.
+But in the paging method the logical t o real address
+translation is still done by processor hardware. The
+processor must know how to access the page table
+of the current process.
+• The operating system partitions the memory into
+areas called page frames. Each page frame size is
+equal. Page size is normally power of 2.
+• Fig. 5.6.4 shows a paging model. Operating system
+maintains the free frame list. During execution of
+process the memory management unit consults the
+page table t o perform address translation.
+The physical address is the portion of the primary
+memory allocated to the process. The page frames
+allocated to the process need not be contiguous.
+• The aim of the paging system is to identify the set
+o f pages needed for the process current locality and
+then to load only those pages into page frames in
+primary memory.
+• The logic of the address translation process in
+paged system i s shown in the following Fig. 5.6.5.
+• For example, the virtual address is 03200H. This
+virtual address is split by hardware into the page
+number and offset within that page. High order
+12 bit is used as page number ie. 003H and lower
+order 1 2 bit is used for the offset i.e. (200H).
+• Page number i s used to index the page table and to
+obtain the corresponding physical frame number
+(FFFH). This value is then concatenated with the
+offset to produce the physical address (FFF200H)
+which is used to reference the target item in
+memory.
+• The operating system keeps track of the status of
+each page frame by means of a physical memory
+map that may be structured as a static table. The
+logical address space may be the same size as the
+physical address space or it may be smaller.
+• If logical address space is small, it prevents one
+process from monopolizing all of the memory. If the
+logical address space is larger than the physical
+Advantages
+1. It is compact and support sparse address space.
+2. It easily manage the memory.
+3. It reduce table fragmentation.
+Disadvantages
+1 . Overhead due to one more page table.
+2. On TLB miss, two loads from memory will be
+required to get the right address translation
+information from the page table.
+
+4.7 Segmentation 
+n segmentation, a program's data and instructions
+are divided into blocks called segments. A segment
+i s a logical entity in a program.
+• Fig. 5.7.1 shows programmer's view.
+Logical view : A process consists of a set of
+segments.
+• Physical view: It consists of non-adjacent areas of
+memory allocated to segments.
+• All segment size may be equal or may not be equal.
+Segmentation support user view of memory.
+Fig. 5.7.1 shows programmer's view of a program.
+• Segmentation can be implemented with or without
+paging.
+• Collection of segment is called as logical address
+space. Each segment is identified by its name.
+• Processor generates logical addresses. These
+addresses consists of a segment number and an
+offset into the segment. Segment number i s used as
+an index to segment page table.
+• Fig. 5.7.2 shows logical address.
+egment names are normally symbolic names.
+• Operating system maintains a segment table for
+each process. It is usually stored in main memory
+a s a segment that is not t o be loaded as long a s the
+process can run.
+• Each entry in the segment table has a segment base
+and a segment limit. The base field contains the
+segment relocation register for the target segment.
+The segment limit field contains the length of the
+segment.
+• Fig. 5.7.3 shows an address
+segmentation.
+translation
+in
+• Segment table contains the physical address of the
+start o f the segment. Then add the offset to the base
+and generate the physical address.
+• If the required reference is not found in one of the
+segment registers, then error is generated. At the
+same time, operating system
+does lookup in
+segment table and loads new segment descriptor
+into the register.
+Advantages
+1. It provides virtual memory.
+2 Allows dynamic segment growth.
+3. Segmentation assists dynamic linking.
+4. Segmentation i s visible.
+
+Disadvantages
+1. Maximum size of a segment is limited by the
+size o f main memory.
+2. Difficulty to manage variable size segments on
+secondary storage.
+3. Fragmentation and complicated memory
+management.
+
+4.8 age Replacement Algorithm
+• When a page fault occurs, page replacement
+algorithms are used for loading the page in memory
+and n o free page frame exist in memory.
+• Page fault occurs if a running process references a
+nonresident page.
+• The goal of a replacement strategy is to minimize
+the fault rate. To evaluate a replacement algorithm,
+following parameters are used :
+• 1. The size of a page 2. A set of reference strings
+3 . The number of page frames.
+• Given these inputs, we can determine the number
+of page faults and hence the page-fault rate. A
+reference string is a list of pages in order of their
+reference by the processor.
+• When we find that a page frame reference is in
+main memory then we have a page hit and when
+page fault occurs we say it is page miss. A poor
+choice of page replacement algorithm may result in
+lot o f page misses.
+• Page replacement algorithm deals with how the
+kernel decides which page reclaim. Operating
+systems selects the local or global page replacement
+policy. Local replacement policy allocates a certain
+number o f pages t o each process. If a process needs
+new page, it must replace one of its own pages. If
+the O S uses a global policy, it can take a page from
+any process, using global selection criteria.
+• UNIX OS uses global page replacement policy.
+
+4.8.1 First-In-First-Out
+• FIFO page replacement algorithm removes the
+pages that have been in memory the longest. Here
+system keeps track of
+the order in which pages
+enter primary memory.
+When page must be replaced, the oldest page is selected. System maintain a FIFO queue of pages.
+Pages are inserted a t the tail o f the queue.
+• FIFO algorithms interfere with the locality o f the process.
+• Consider the reference string : 1 , 2 , 3, 4, 2, 5, 3 , 4 , 2, 6, 7, 8, 7, 9, 7, 8, 2, 5, 4, 9
+• Page frame size = 3
+
+4.8.2 LRU Page Replacement Algorithm
+• LRU stands for least recently used. This replacement policy chooses to replace the page which has not
+been referenced for the longest time. This policy assumes the recent past will approximate the
+immediate future. The operating system keeps track o f when each page was referenced by recording
+the time of reference or by maintaining a stack of references.
+• System must maintain a time stamp for every page that indicates the time of the last access. When
+deciding which page t o remove, the operating system must scan all the pages of memory for finding
+the oldest time stamp. Instead o f keeping an extra time stamp bits, LRU i s implement by maintaining
+pages in an ordered list.
+• System can manage LRU with a list called the RU stack o r the paging stack. In the LRU stack, the
+first entry describes the page referenced least recently, the last entry describes to the last page
+referenced. If a page is referenced, move it to the end o f the list.
+• LU algorithm does not interfere with the locality o f the process.
+• Consider the reference string : 1 , 2, 3 , 4 , 2, 5 , 3, 4, 2, 6 , 7, 8 , 7 , 9, 7 , 8, 2, 5, 4, 9
+• Page frame size = 3
+
+4.8.3 LRU Approximation Algorithms
+• LRU is a desirable algorithm to use, but it is expensive to implement directly. It is often
+approximated. By using one reference bit, user can do a second-chance or clock replacement
+algorithm.
+• Page frames are arranged in circular list. Initially each reference bit is set to 0. It is set to 1 any time
+the page i s referenced. Algorithm uses pointer t o points to the next candidate for a page replacement.
+• When a page replacement is needed, the frame pointed to is considered a s a candidate. If its reference
+bit i s 0 , it is selected. If its bit i s 1, the bit is set to 0, and the pointer is incremented to examine the
+next frame. This continues until a frame is found with a reference bit of 0. This may require that all
+frames be examined; bringing us around to the one we started with.
+Second chance replacement
+• In some books, the second chance replacement policy is called the clock replacement policy. In the
+second chance page replacement policy, the candidate pages for removal are consider in a round
+robin matter and a page that has been accessed between consecutive considerations will not be
+replaced.
+• The page replaced is the one that, considered in a round robin matter. It has not been accessed since
+its last consideration.
+• Working :
+1. Add a "second chance" bit to each memory frame.
+2. Each time a memory frame is referenced, set the "second chance" bit to ONE (1) - this will give the
+frame a second chance...
+3. A new page read into a memory frame has the second chance bit set to ZERO (0)
+4 . When you need to find a page for removal, look in a round robin manner in the memory frames:
+i. If the second chance bit is ONE, reset its second chance bit (to ZERO) and continue.
+ii. If the second chance bit is ZERO, replace the page in that memory frame.
+
+4.8.4 Optimal Page Replacement
+• The data which will not b e accessed permanently or for a longest time should b e replaced in optimal
+page replacement algorithm.
+• Optimal page replacement algorithm gives less page fault as compared to FIFO and LRU. This
+algorithm never suffer from Belady's anomaly.
+• Use of this page-replacement algorithm guarantees the lowest possible page-fault rate for a fixed
+number of pages
+• The key distinction between FIFO and optimal i s that FIFO uses the time when a page was brought
+into memory whereas optimal uses the time when a page is t o be used.
+• It is difficult to implement because of future reference.
+• Consider the reference string : 1, 2, 3, 4, 2, 5 , 3, 4, 2, 6, 7, 8 , 7, 9, 7, 8, 2, 5, 4, 9
+• Page frame size = 3
+Advantages:
+1. It has lowest page fault rate.
+2. Optimal never suffer from Belady's anomaly.
+3. Used for comparison studies.
+Disadvantages :
+1. Difficult to implement.
+2. It requires future reference string.
+
+
+
+
+Unit 5: File Management
+
+
+5.1 File 
+5.1.1 File Concept
+• Storing and retrieving information is the necessity
+of all computer application. There are three
+problems which occur while storing and retrieving
+information.
+1. A process can store limited amount of
+information within its own address space when a
+process is executed.
+2. When process gets terminated information gets
+lost.
+3. It is necessary for multiple processes to access
+the information a t same time.
+• To overcome the above problems information must
+b e stored on files. File management is the most
+visible service of an operating system. Computer
+can store information on various storage media such
+as tapes, disks etc.
+• A file is a collection of related information defined
+by its creator. A file may be the collection of
+various types of data depending upon data types.
+In general file is a collection of bits, bytes, lines or
+records the meaning of which is defined by the
+creator.
+
+5.1.2 File Attributes
+• A file attribute may vary from one O.S to another.
+But typically consists of these :
+• Name: The name attribute is specified by the user
+which is the information kept in human readable
+form. A file is named for the convenience of its
+human users.
+ Identifier : I t i s a unique tag o r a number which is
+used to identify file within the file system.
+• Type: It specifies the file type that i s supported by
+the file system such as document file, image file etc.
+• Size: This attribute specifies the size of the file on
+the system. It may be stored in the form of bytes,
+kilobytes, megabytes etc.
+• Location: This information specifies where exactly
+the file i s stored on the device.
+• Protection : It is done by means of access
+permission or password. It is usually a secret code
+used by the user to protect his/ her file/data.
+• Time, date and user identifier: This information
+may be kept for monitoring the usage of file/data.
+And also can b e used for protection and security
+purpose.
+
+5.1.3 File Type 
+Executable file : It is the series of code section
+that the loader can bring into the memory and
+execute.
+2 . Object file : I t i s the sequence o f bytes organized
+into blocks, understandable by system linker.
+ource file: It is the sequence of subroutines
+and functions each of which is further organized
+a s declaration followed by executable statements.
+4. Batch file: It is the collection of the commands
+t o the command interpreter.
+5. Text file: It is the sequence of characters
+organized into lines.
+6. Library files: It is collection of library functions
+for the program.
+
+5.1.4 File Operations
+• The O.S. can provide system calls for doing file
+operations.
+1. Creating a file: Two steps are necessary for
+creating a file :
+• A space in the file system
+• An entry for new file must be made in the
+directory
+2. Writing a file : While performing the write
+operation, the system call is activated which
+specifies the name of the file and the information
+to be written in the file. The system finds out the
+directory t o find out the location of the file when
+we specify the name of the file. The pointer is
+the logical reference, which is used when the
+directory entry is done. It is necessary to store a
+pointer to the end of current file. Using this
+pointer information the address of the next block
+can be easily derived and the information can b e
+written to the specified file. The pointer
+information must be updated as soon a s the
+write operation is performed.
+3. Reading a file: This operation reads the data
+from the file. The system call is specifies the
+name and location where read operation is to b e
+performed. Again the directory is searched for
+associated entry and the system needs to keep
+the read pointer to the location in the file where
+the next read is t o take place.
+4. Repositioning within the file A directory is
+searched for the appropriate entry and current
+file position is set to a given value. This file
+operation is also known as "file seek".
+5. Deleting a file: The system call searches the
+directory entry for the specified file to b e deleted
+from the file system.
+6. Truncating a file : Sometimes a user may want
+to erase the contents of a file but keep its
+attributes. In these cases truncating is done, this
+allows attributes to remain unchanged.
+• These all operations are those which are always
+required. Other common operations are appending
+renaming copying etc.
+
+
+5.1.5 File System Structures
+• Structure of a file is of mainly three types. Some
+files store data plainly that is one by one character
+o r numbers are stored in other types there might b e
+different arrangements made by the file system.
+Files can be structured in a different ways. Here are
+some common possibilities following are three
+major file structures :
+1) Unstructured sequence of bytes (byte sequence)
+2) Sequence of fixed length of records (record
+sequence)
+3) Tree records of different or may be of same
+length (tree sequence)
+Fig. 6.1.1 shows the type of file structures.
+• In first type of file structure contents are stored in
+the form of byte i.e. sequence of zero and one.
+though this is a n binary file its contents from user
+point of view is a normal file so we can say that
+internally data is stored in byte but user program
+make these file accessible and readable by user.
+• In the next type where data is stored in the form of
+records. Records are collection of collective data
+means detail of one employee like employee code,
+name, salary, address etc. could be form of one
+record.
+• The third type is critical means used in commercial
+applications means data searching is quite tedious.
+In this type a s data is hierarchical order.
+
+
+5.2 Access Methods 
+
+5.2.1 Sequential Access Method
+• The sequential access method is the simplest
+method. Information in a file is processed in order
+one record after the other the bulk of operation on
+the file is read and writes. In a read operation "read
+next "reads the next portion of file and
+automatically advances a file pointer. Similarly the
+write operations "write next "appends to the end of
+the file and advance to the end of newly written
+material ie. the new end of the file.
+Sequential Access Method
+• The sequential access method is the simplest
+method. Information in a file is processed in order
+one record after the other the bulk of operation on
+the file is read and writes. In a read operation "read
+next "reads the next portion of file and
+automatically advances a file pointer. Similarly the
+write operations "write next "appends to the end of
+the file and advance to the end of newly written
+material ie. the new end of the file.
+
+5.2.2 Direct Access Method
+• It is also called a s relative access method. A file is
+made up of fixed length records that allows
+program t o read and write records rapidly in n o
+particular order. Direct access method is based on
+disc types storage devices since disk allows random
+access to file block. For direct access file is viewed
+as no sequence of bocks or records.
+• For eg. We may read block 14 then we may read
+block 5 3 and then write block 7. There are no
+restrictions on order of reading or writing files for
+direct access.
+• For direct access method the file operation must b e
+modified to include the block number as a
+parameter. Thus we have read 'n' or write 'n' where
+n is the block number rather than read next or
+write next. Table below shows the simulation of
+sequential access o n direct access
+
+5.2.3 wapping
+• A process must reside in memory to be ready to
+execute. A process can b e moved temporarily out of
+memory to a backing store, and then brought back
+into memory for continued execution. For e g : In a
+multiprogramming environment when number of
+processes is queued for execution and if the system
+i s implemented with a round robin algorithm, then
+when time quantum/time slice expires then the
+process will be swapped out and the new process
+will be swapped into the memory space that just
+has been freed. The CPU scheduler selects the
+process for scheduling. When the time slice or time
+quantum gets over, the CPU switches to next job.
+The Fig. 6.2.2 shows the swapping of two processes
+using disk as backing store.
+The swapping policy is used for priority based
+scheduling algorithms.
+If a higher priority process comes t o the system and
+needs service, the memory manager can swap out
+priority process and
+execute the higher priority process. When higher
+priority process finishes its execution the lower
+priority process can be moved back into the system
+continue with execution.
+sometimes called "roll-in and roll-out". Swapping
+involves a backing store which is generally a large
+capacity disk. The system maintains the ready
+queue which consists off processes ready to run.
+Then the scheduler selects the process and
+dispatcher gives the control o f CPU for execution.
+
+5.2.4 Allocation Methods 
+5.2.4.1  Contiguous Allocation
+• I t requires that each file occupy a set of contiguous
+block on disk. This address is defined linear
+ordering ie. proceeding straight from one stage to
+another. Note that with this ordering, accessing
+block b+1 after the block b requires no head
+movement. When head movement is needed, (i.e
+only one sector of cylinder to next) it is only one
+track. That is from last sector to the first sector of
+next cylinder. Disk address and the length define
+contiguous allocation of the file. If the file is n
+blocks long and starts at location a then it occupies
+a , a+1, at2,.. atn-1. The directory entry for each
+file indicates the address of starting block and the
+length of the area allocated for this file. Fig. 6.2.3
+shows directory of each file indicating the address
+o f starting block and the length of the area allocated
+for this file. (See Fig. 6.2.3)
+Advantages :
+1. Accessing of a file that has been allocated
+contiguously is easy.
+2. Both sequential and direct access can be
+supported by contiguously allocated.
+Disadvantages:
+1. In contiguous allocation, the problem is that one
+couldn't predict or determine the space required
+for the allocation of the file.
+2. Even if the total amount of space needed for a
+file is known in advance, tree allocation may be
+inefficient because it may lead to external
+fragmentation.
+External Fragmentation
+• External fragmentation exists when enough total
+disk space exists to satisfy the request but it i s not
+contiguous. Storage is fragmented into large number
+o f small partitions depending upon the total amount
+of disk storage and average file size; external
+fragmentation may be either a minor or a major
+problem.
+
+5.2.4.2 Linked Allocation 
+• The problems associated in contiguous allocation are resolved in linked allocation technique. In linked allocation each file is a linked list of disk blocks.The disk blocks are distributed anywhere on the
+disk. The directory structure contains a pointer to the 1st and last block of the file ie. start and the 
+end. Fig. 6.2.4 shows the linked allocation. 
+ For eg. A file of 8 blocks which might start at block 2 4 and continue a t block 1 3 then block 6 , then block 15, then block 18, then block 27, then block 3 4 and finally block 35. Each block contains a pointer to the
+next block. These pointers is not known to the users. To create a new file a new entry is created in the directory. Each directory has a pointer to 1st disk block of the file. Initially, when a new file is 
+created the pointer is has null value indicating
+empty file. The file gets extended according to the
+pointer value of the next block. These blocks get
+linked together with the help of the pointer value.
+Advantages:
+1. There is no external fragmentation wth linked
+allocation. Any free block can be used to satisfy
+the request. 
+2. There i s no need of declaring the size of the file
+when it is created. A file can continue growing
+a s long as free blocks are available.
+
+Disadvantages:
+1. The major problem is, it can be used effectively
+only for sequential access o f file.
+2. Extra space required for pointer.
+It is not reliable ie. If an pointer gets lost or
+damaged it could not have access to that
+particular block o r file.
+
+5.2.4.3 Indexed Allocation
+ Linked allocation cannot support efficient direct access because the pointer to blocks are scattered th the block themselves all over the disk and must be retrieved in order. Index allocation is the
+solution to the problems of both the previous
+techniques. It provides this solution by bringing the
+entire pointers into one location called "index
+block". Fig. 6.2.5 shows the indexed allocation.
+ The directory comprises the address of index block.
+Each file has its own index block which is an array
+of disk block addresses. The n" entry in the index
+block points to the n block of file. To find and
+read the nth block we use the pointer ie. the nth
+index block.
+Advantages : • It supports the direct access without
+suffering from external fragmentation and no extra
+space required for pointer.
+Disadvantage: • Index allocation thus suffers from
+wasted space. The pointer overhead of index block is
+generally greater than the pointer overhead of linked
+allocation.
+For eg. : In a common case where we have a file of
+only 1 or 2 blocks, then with linked allocation we
+lose the space of only 1 pointer per block but with
+index allocation an entire index block must be
+allocated even if only 1 or 2 pointers will be used,
+so remaining space is on wastage
+
+
+
+5.3 Directory Structure 
+5.3.1 Single Level Directory Structure
+• It is a simple directory structure where all the files
+are present in the same directory. These directories
+are very easy to understand. This directory has
+some restrictions like if the number of files get
+increases then the file names should b e unique
+under same directory. Fig 6.3.1 shows the single
+level directory structure.
+There is another drawback that if single user works
+on this single level system it may be difficult to
+remember the names of the files, if the files are
+more. Therefore the two major difficulties are
+naming and grouping.
+Advantages :
+i. Single level directory is very simple, easy to
+understand, maintain and easy t o implement.
+ii. The software design is also very simple.
+ili. The ability to locate files is very fast as there is
+only one directory.
+Disadvantages :
+i . It is not used in multiuser system. For e.g. if two
+users A and B use the same filename for
+particular file then the file of user A or B may b e
+overwritten.
+ii. It is difficult to remember the names of the files
+if the files are very large in quantity.
+
+5.3.2 Two Level Directory Structure
+• In two level directory structure, the system
+maintains a master block that has one entry for each
+user. This master block contains the addresses of
+the directory of the users. In this system each user
+has his/her own "user file directory"(UFD). When
+user logs into the system the "master file
+directory"(MFD) is searched. This MFD contains the
+index names of the users with their account details.
+Once login done 1st MFD and then UFD is
+searched.
+• See the Fig. 6.3.2, it indicates that there are different
+users who have their own directories and their
+respective files stored in their own directories. The
+process is very simple that when user logs on
+he/she can access only his/her own directory and of
+course files present in it. There might be different
+users like userl, user2, user3 etc. and it may contain
+the files directories listed below. Always in UNIX
+all the devices, directories, files each and every
+object is treated a s file. An advantage of this type of
+structure is isolation, which keep one user separate
+from each user. But ultimately if two users need to
+communicate with each other then it becomes
+difficult. W e also call this structure as inverted root
+tree structure.
+• We use the terminology path name that is nothing
+but the exact location of the file where it i s placed.
+There could be the same file name for different
+user. This structure does efficient searching. As
+different users are there, grouping cannot b e done.
+
+5.3.3 Tree Structured Directories
+• A tree is the most common and popular directory
+structure. It is very useful because it solves the
+problem o f grouping. It can group different users or
+directories. The tree has a root directory and every
+file in the system has a unique path name. A
+directory contains a set of files or sub directories.
+All directories have the same internal organization.
+One bit in each directory entry defines the entry as
+a file or as a subdirectory. These subdirectories
+further may have files or again some directories.
+Each process has a current directory. This helps
+users to organize their data in a particular and
+efficient manner. Path describes where exactly that
+tile or directory is stored. Path names can be of two
+types absolute and relative.
+• An absolute path name begins at the root and
+follows a path down t o the specified file giving the
+directory names on the path. A relative path name defines path from the current directory
+The important issue i s how t o delete a file directory
+if it already contains subdirectory or may be files.
+Some O.S. directly allows deleting this type of
+directory, But other O.S do not allow the same
+thing. If a directory is empty, its entry in the
+directory can simply be deleted. If the directory to
+be deleted is not empty, the none of the two
+approaches can be done. User must first delete all
+the files and sub directories in that directory. If a
+request is made to delete a directory, the entire
+directory's files and subdirectories are also to b e
+deleted.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
