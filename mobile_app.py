@@ -123,7 +123,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
             f"\n\n--- LOCAL DIAGRAMS AVAILABLE: {available_images} ---\n"
             "CRITICAL INSTRUCTIONS FOR DIAGRAMS:\n"
             "1. You MUST use these images when explaining topics related to them.\n"
-            "2. DO NOT DESCRIBE THE IMAGE'S VISUAL ELEMENTS IN TEXT.\n"
+            "2. DO NOT DESCRIBE VISUAL ELEMENTS OR USE ASCII ART.\n"
             "3. INSTEAD, ONLY output this EXACT tag: [IMG: filename.png]\n"
             "----------------------------------\n"
         )
@@ -390,6 +390,7 @@ def main(page: ft.Page):
         add_message("Prep me for Viva!", is_user=True)
         execute_ai_task("", is_viva=True)
 
+    # 🌟 WEB PATCH: Consolidated Save Locations
     def bookmark_click(e):
         hist = user_state["chat_history"]
         last_ai_msg = next((msg for msg in reversed(hist) if "EduNex:\n" in msg), None)
@@ -398,13 +399,14 @@ def main(page: ft.Page):
             show_feedback("⚠️ Chat is empty! Nothing to bookmark.", color="#ff4444")
             return
             
-        os.makedirs("saved_notes", exist_ok=True)
+        os.makedirs("assets/saved_notes", exist_ok=True)
         try:
-            with open("saved_notes/Revision_List.txt", "a", encoding="utf-8") as f:
+            with open("assets/saved_notes/Revision_List.txt", "a", encoding="utf-8") as f:
                 f.write(f"\n--- ⭐ Bookmarked on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')} ---\nSubject: {user_state['current_subject']}\n{last_ai_msg}\n")
             show_feedback("⭐ Saved to Revision Vault!", color="#ffd700")
-        except Exception: 
-            pass
+        except Exception as ex: 
+            print(f"DEBUG: Save Error - {ex}")
+            show_feedback("❌ Failed to save.", color="#ff4444")
 
     def export_click(e):
         hist = user_state["chat_history"]
@@ -507,10 +509,16 @@ def main(page: ft.Page):
                     
             if CLOUD_DATA[selected_name].get("github_api_url") and not CLOUD_DATA[selected_name]["available_images"]:
                 try:
-                    resp = requests.get(CLOUD_DATA[selected_name]["github_api_url"], timeout=5)
+                    # 🌟 WEB PATCH: Attach authentication to completely bypass GitHub's IP rate limit!
+                    gh_headers = {"Authorization": f"Bearer {API_KEY}"} if API_KEY else {}
+                    resp = requests.get(CLOUD_DATA[selected_name]["github_api_url"], headers=gh_headers, timeout=5)
+                    
                     if resp.status_code == 200: 
                         CLOUD_DATA[selected_name]["available_images"] = [f["name"] for f in resp.json() if f["name"].lower().endswith(('.png', '.jpg', '.jpeg'))]
-                except Exception: pass
+                    else:
+                        print(f"DEBUG: GitHub Image Folder Error: {resp.status_code}")
+                except Exception as ex: 
+                    print(f"DEBUG: GitHub Exception: {ex}")
                     
             current_subject_text.value = f"Selected: {selected_name} ☁️"
             clear_chat_click(None)
@@ -525,7 +533,8 @@ def main(page: ft.Page):
         vault_viewer.visible = False
         vault_list.visible = True
         has_files = False
-        for folder in ["saved_notes", "assets/exports"]:
+        # 🌟 WEB PATCH: Now correctly targets the new consolidated paths
+        for folder in ["assets/saved_notes", "assets/exports"]:
             if os.path.exists(folder):
                 for filename in os.listdir(folder):
                     if filename.endswith((".txt", ".md", ".pdf")):
@@ -650,6 +659,7 @@ def main(page: ft.Page):
 # ---------------------------------------------------------
 if __name__ == "__main__":
     os.makedirs("assets/exports", exist_ok=True)
+    os.makedirs("assets/saved_notes", exist_ok=True)
     
     port = int(os.getenv("PORT", 8550))
     
