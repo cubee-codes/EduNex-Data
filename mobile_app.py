@@ -722,7 +722,7 @@ if __name__ == "__main__":
     # Initialize the app with secure asset and upload routing
     ft.app(
         target=main, 
-        view=ft.WEB_BROWSER, 
+        view="web_browser", 
         port=port, 
         host="0.0.0.0", 
         assets_dir="assets", 
