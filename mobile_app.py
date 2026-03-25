@@ -391,27 +391,24 @@ def main(page: ft.Page):
         add_message("Prep me for Viva!", is_user=True)
         execute_ai_task("", is_viva=True)
 
-    # 🌟 DIAGRAM TRANSLATOR: Converts [IMG: ...] into standard Markdown images for the Vault!
+    # 🌟 DIAGRAM TRANSLATOR (For Internal Vault markdown)
     def format_to_markdown(text, subject_key):
         if not subject_key or subject_key not in CLOUD_DATA:
             return text
         base_url = CLOUD_DATA[subject_key]["img_base_url"]
-        
         def repl(match):
             filename = match.group(1).strip()
             safe_filename = urllib.parse.quote(filename)
             return f"\n\n![Diagram]({base_url}/{safe_filename})\n\n"
-            
         return re.sub(r'\[IMG:(.*?)\]', repl, text)
 
-    # 🌟 FIXED: Saves as Markdown (.md) so diagrams are preserved!
     def bookmark_click(e):
         if not user_state.get("last_ai_response"): 
             show_feedback("⚠️ Chat is empty! Nothing to bookmark.", color="#ff4444")
             return
             
         os.makedirs(NOTES_DIR, exist_ok=True)
-        save_path = os.path.join(NOTES_DIR, "Revision_List.md") # Changed to .md
+        save_path = os.path.join(NOTES_DIR, "Revision_List.md") 
         
         md_text = format_to_markdown(user_state["last_ai_response"], user_state["current_subject"])
         
@@ -424,23 +421,68 @@ def main(page: ft.Page):
             traceback.print_exc()
             show_feedback("❌ Failed to save.", color="#ff4444")
 
-    # 🌟 FIXED: Exports as Markdown (.md) instead of PDF to preserve Diagrams!
+    # 🌟 NEW HTML TRANSLATOR: Converts text to a beautiful webpage with images!
+    def format_to_html(text, subject_key):
+        # Format bold and newlines
+        html_text = text.replace('\n', '<br>')
+        html_text = re.sub(r'\*\*(.*?)\*\*', r'<b style="color:#00e5ff;">\1</b>', html_text)
+        html_text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', html_text)
+        
+        # Inject Real Images
+        if subject_key and subject_key in CLOUD_DATA:
+            base_url = CLOUD_DATA[subject_key]["img_base_url"]
+            def repl(match):
+                filename = match.group(1).strip()
+                safe_filename = urllib.parse.quote(filename)
+                return f'<br><div style="text-align:center;"><img src="{base_url}/{safe_filename}" style="max-width:100%; border-radius:10px; border: 1px solid #00ff88; margin-top:15px; margin-bottom:15px;"></div><br>'
+            html_text = re.sub(r'\[IMG:(.*?)\]', repl, html_text)
+        else:
+            html_text = re.sub(r'\[IMG:(.*?)\]', '[Diagram Available in App]', html_text)
+            
+        return html_text
+
+    # 🌟 FIXED EXPORT: Now exports as a beautiful .html file that browsers understand
     def export_click(e):
         if not user_state.get("last_ai_response"): 
             show_feedback("⚠️ Chat is empty! Nothing to export.", color="#ff4444")
             return
             
         os.makedirs(EXPORTS_DIR, exist_ok=True)
-        filename = f"EduNex_Guide_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.md"
+        filename = f"EduNex_Guide_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.html"
         filepath = os.path.join(EXPORTS_DIR, filename)
         
-        md_text = format_to_markdown(user_state["last_ai_response"], user_state["current_subject"])
+        html_content = format_to_html(user_state["last_ai_response"], user_state["current_subject"])
+        
+        full_html_page = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>EduNex Study Guide</title>
+            <style>
+                body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #e0e0e0; background-color: #0F172A; max-width: 800px; margin: 0 auto; padding: 20px; }}
+                .container {{ background-color: #1A1525; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }}
+                h1, h2, h3 {{ color: #00ff88; }}
+                hr {{ border: 0; height: 1px; background: #333; margin: 20px 0; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1 style="text-align:center;">EduNex Study Guide</h1>
+                <p style="text-align:center; font-style: italic; color: #888;">Subject: {user_state['current_subject']}</p>
+                <hr>
+                <div style="font-size: 16px;">{html_content}</div>
+            </div>
+        </body>
+        </html>
+        """
         
         try:
             with open(filepath, "w", encoding="utf-8") as f:
-                f.write(f"# EduNex AI Study Guide\n**Subject:** {user_state['current_subject']}\n\n{md_text}")
+                f.write(full_html_page)
             
-            show_feedback("📄 Export generated! Downloading...", color="#00ff88")
+            show_feedback("📄 Export generated! Opening in browser...", color="#00ff88")
             page.launch_url(f"/exports/{filename}")
             
         except Exception as ex: 
@@ -532,6 +574,7 @@ def main(page: ft.Page):
         for folder in [NOTES_DIR, EXPORTS_DIR]:
             if os.path.exists(folder):
                 for filename in os.listdir(folder):
+                    # We only load .md or .txt into the Vault UI natively
                     if filename.endswith((".txt", ".md")):
                         has_files = True
                         file_path = os.path.join(folder, filename)
@@ -548,23 +591,20 @@ def main(page: ft.Page):
             with open(filepath, "r", encoding="utf-8") as f: 
                 content = f.read()
             
-            # Figure out the exact URL to download this specific file from the server
             folder_name = os.path.basename(os.path.dirname(filepath))
             file_name = os.path.basename(filepath)
             download_url = f"/{folder_name}/{file_name}"
 
             vault_viewer.controls.clear()
             
-            # 🌟 NEW: The Download Button inside the Vault Viewer!
             action_row = ft.Row([
                 ft.ElevatedButton(content=ft.Text("← Close File", color="#ff4444"), bgcolor="#222222", on_click=lambda e: (setattr(vault_viewer, 'visible', False), setattr(vault_list, 'visible', True), page.update())),
-                ft.ElevatedButton(content=ft.Text("⬇️ Download Note", color="#00ff88"), bgcolor="#222222", on_click=lambda e: page.launch_url(download_url))
+                ft.ElevatedButton(content=ft.Text("⬇️ Save to Device", color="#00ff88"), bgcolor="#222222", on_click=lambda e: page.launch_url(download_url))
             ])
             
             vault_viewer.controls.append(action_row)
             vault_viewer.controls.append(ft.Divider(color="#333333"))
             
-            # 🌟 NEW: This natively renders the images inside the Vault!
             vault_viewer.controls.append(ft.Markdown(content, selectable=True, extension_set=ft.MarkdownExtensionSet.GITHUB_WEB))
             
             vault_list.visible, vault_viewer.visible = False, True
