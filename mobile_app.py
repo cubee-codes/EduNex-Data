@@ -6,9 +6,16 @@ import re
 import os
 import base64
 import random 
+import traceback
 from collections import Counter
 import urllib.parse 
 from dotenv import load_dotenv
+
+# --- ABSOLUTE CLOUD PATHING ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSETS_DIR = os.path.join(BASE_DIR, "assets")
+NOTES_DIR = os.path.join(ASSETS_DIR, "saved_notes")
+EXPORTS_DIR = os.path.join(ASSETS_DIR, "exports")
 
 # ---------------------------------------------------------
 # 1. SECURE CONFIGURATION (GITHUB MODELS API)
@@ -37,7 +44,6 @@ CLOUD_DATA = {
 # 2. ULTRA-FAST SYLLABUS RAG ENGINE
 # ---------------------------------------------------------
 def fast_search_syllabus(query, chunks, top_k=5, randomize_if_empty=False):
-    print("DEBUG: 🧠 Running High-Speed RAG Engine on RAM chunks...")
     if not chunks: 
         return "No syllabus context available."
         
@@ -45,7 +51,6 @@ def fast_search_syllabus(query, chunks, top_k=5, randomize_if_empty=False):
     
     if not query_words or randomize_if_empty: 
         sampled_chunks = random.sample(chunks, min(top_k, len(chunks)))
-        print(f"DEBUG: 🎲 Selected {len(sampled_chunks)} random chunks for Quiz/Viva.")
         return "\n\n--- RANDOM SYLLABUS EXCERPTS ---\n" + "\n...\n".join(sampled_chunks) + "\n----------------------------------\n"
 
     chunk_scores = []
@@ -58,10 +63,8 @@ def fast_search_syllabus(query, chunks, top_k=5, randomize_if_empty=False):
     best_chunks = [c[1] for c in chunk_scores[:top_k] if c[0] > 0]
     
     if best_chunks:
-        print(f"DEBUG: ✅ Extracted {len(best_chunks)} relevant chunks instantly!")
         return "\n\n--- RELEVANT SYLLABUS EXCERPTS ---\n" + "\n...\n".join(best_chunks) + "\n----------------------------------\n"
     else:
-        print("DEBUG: ⚠️ No direct matches. Defaulting to top of syllabus.")
         return "\n\n".join(chunks[:top_k])
 
 # ---------------------------------------------------------
@@ -71,7 +74,6 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
     if not API_KEY:
         return "❌ CRITICAL ERROR: GITHUB_API_KEY missing. Please check your .env file."
         
-    print(f"DEBUG: 🌐 Connecting to GitHub Models API ({MODEL_NAME})...")
     url = "https://models.inference.ai.azure.com/chat/completions"
     headers = {
         "Content-Type": "application/json",
@@ -123,8 +125,8 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
             f"\n\n--- LOCAL DIAGRAMS AVAILABLE: {available_images} ---\n"
             "CRITICAL INSTRUCTIONS FOR DIAGRAMS:\n"
             "1. You MUST use these images when explaining topics related to them.\n"
-            "2. DO NOT DESCRIBE VISUAL ELEMENTS OR USE ASCII ART.\n"
-            "3. INSTEAD, ONLY output this EXACT tag: [IMG: filename.png]\n"
+            "2. ABSOLUTELY NO ASCII ART OR TEXT DIAGRAMS (DO NOT use +, -, |, etc.).\n"
+            "3. ONLY output this EXACT tag where the diagram should go: [IMG: filename.png]\n"
             "----------------------------------\n"
         )
 
@@ -177,21 +179,16 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
         if response.status_code == 200:
             result = response.json()
             if 'choices' in result and len(result['choices']) > 0:
-                print("DEBUG: ✅ API generation successful.")
                 return result['choices'][0]['message']['content']
             return "Safety Block (No content generated)."
         elif response.status_code == 429:
-            print("DEBUG: ⚠️ Error 429 - Rate Limit.")
             return "⚠️ **API Quota Exceeded:** You have reached the API rate limit. Please wait a minute before trying again."
         else:
-            print(f"DEBUG: ❌ API Error {response.status_code}: {response.text}")
             return f"❌ API Error {response.status_code}: Unable to process request."
             
     except requests.exceptions.Timeout:
-        print("DEBUG: ❌ Request Timed Out.")
         return "❌ **Network Timeout:** The AI took too long to respond. The connection was dropped to prevent freezing."
     except Exception as e:
-        print(f"DEBUG: ❌ Exception: {str(e)}")
         return f"❌ Connection Error: {str(e)}"
 
 # ---------------------------------------------------------
@@ -207,7 +204,8 @@ def main(page: ft.Page):
         "chat_history": [],
         "session_files": [],
         "current_subject": None,
-        "cached_syllabus_chunks": []
+        "cached_syllabus_chunks": [],
+        "last_ai_response": None  # 🌟 NEW: Dedicated memory bank for exact saves
     }
     
     main_screen = ft.Container(expand=True, visible=True)
@@ -220,7 +218,10 @@ def main(page: ft.Page):
     feedback_text = ft.Text("", size=12, weight="bold", color="#00ff88")
     status_row = ft.Row(controls=[feedback_text], alignment=ft.MainAxisAlignment.CENTER)
     
+    # 🌟 UI FIX: Search box securely trapped inside a 300px container
     search_box = ft.TextField(label="Type to search subject...", bgcolor="#2b2b2b", color="white", border_radius=10, text_size=14)
+    search_container = ft.Container(content=search_box, width=300)
+    
     unified_dropdown = ft.Dropdown(label="Select from list", bgcolor="#2b2b2b", color="white", border_color="#444", border_radius=10, options=[ft.dropdown.Option(key) for key in CLOUD_DATA.keys()], width=300)
     mode_switch = ft.Switch(label="Exam Mode (Strict)", active_color="#ff4444", inactive_thumb_color="#00ff88", value=False)
 
@@ -273,9 +274,12 @@ def main(page: ft.Page):
         
         user_state["chat_history"].append(f"[{timestamp}] {sender}:\n{text}\n" + "-"*40 + "\n")
         
+        if not is_user:
+            user_state["last_ai_response"] = text  # Always memorize the exact last response
+            
         if len(user_state["chat_history"]) > 10:
             user_state["chat_history"].pop(0)
-            show_feedback("🧹 AI Memory optimized (Oldest exchange cleared)", color="#ff8800")
+            show_feedback("🧹 AI Memory optimized", color="#ff8800")
         
         bg_color = "#CC2b2b2b" if is_user else "#CC111111" 
         if not is_user:
@@ -390,40 +394,38 @@ def main(page: ft.Page):
         add_message("Prep me for Viva!", is_user=True)
         execute_ai_task("", is_viva=True)
 
-    # 🌟 WEB PATCH: Consolidated Save Locations
+    # 🌟 DATA FIX: Bookmarks now use absolute pathing and exact memory retrieval
     def bookmark_click(e):
-        hist = user_state["chat_history"]
-        last_ai_msg = next((msg for msg in reversed(hist) if "EduNex:\n" in msg), None)
-        
-        if not last_ai_msg: 
+        if not user_state.get("last_ai_response"): 
             show_feedback("⚠️ Chat is empty! Nothing to bookmark.", color="#ff4444")
             return
             
-        os.makedirs("assets/saved_notes", exist_ok=True)
+        os.makedirs(NOTES_DIR, exist_ok=True)
+        save_path = os.path.join(NOTES_DIR, "Revision_List.txt")
+        
         try:
-            with open("assets/saved_notes/Revision_List.txt", "a", encoding="utf-8") as f:
-                f.write(f"\n--- ⭐ Bookmarked on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')} ---\nSubject: {user_state['current_subject']}\n{last_ai_msg}\n")
+            with open(save_path, "a", encoding="utf-8") as f:
+                f.write(f"\n--- ⭐ Bookmarked on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')} ---\nSubject: {user_state['current_subject']}\n{user_state['last_ai_response']}\n")
             show_feedback("⭐ Saved to Revision Vault!", color="#ffd700")
         except Exception as ex: 
             print(f"DEBUG: Save Error - {ex}")
+            traceback.print_exc()
             show_feedback("❌ Failed to save.", color="#ff4444")
 
+    # 🌟 DATA FIX: PDF exports use absolute pathing
     def export_click(e):
-        hist = user_state["chat_history"]
-        last_ai_msg = next((msg for msg in reversed(hist) if "EduNex:\n" in msg), None)
-        
-        if not last_ai_msg: 
+        if not user_state.get("last_ai_response"): 
             show_feedback("⚠️ Chat is empty! Nothing to export.", color="#ff4444")
             return
             
-        last_ai_msg = re.sub(r'\[.*?\] EduNex:\n', '', last_ai_msg).replace("-" * 40 + "\n", "").strip()
+        last_ai_msg = user_state["last_ai_response"]
         last_ai_msg = re.sub(r'\[IMG:.*?\]', '[Diagram available in EduNex App]', last_ai_msg)
         
         clean_text = last_ai_msg.encode('ascii', 'ignore').decode('ascii')
         
-        os.makedirs("assets/exports", exist_ok=True)
+        os.makedirs(EXPORTS_DIR, exist_ok=True)
         filename = f"EduNex_Guide_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.pdf"
-        filepath = os.path.join("assets/exports", filename)
+        filepath = os.path.join(EXPORTS_DIR, filename)
         
         try:
             from fpdf import FPDF
@@ -447,13 +449,16 @@ def main(page: ft.Page):
             show_feedback("📄 PDF generated! Downloading...", color="#00ff88")
             page.launch_url(f"/exports/{filename}")
             
-        except Exception: 
+        except Exception as ex: 
+            print(f"DEBUG: PDF Error - {ex}")
+            traceback.print_exc()
             show_feedback("❌ Failed to generate PDF.", color="#ff4444")
 
     def clear_chat_click(e):
         chat_history.controls.clear()
         user_state["chat_history"] = []
         user_state["session_files"] = [] 
+        user_state["last_ai_response"] = None
         
         show_feedback("🗑️ Chat Memory Cleared!", color="#ff4444")
         page.update()
@@ -509,16 +514,12 @@ def main(page: ft.Page):
                     
             if CLOUD_DATA[selected_name].get("github_api_url") and not CLOUD_DATA[selected_name]["available_images"]:
                 try:
-                    # 🌟 WEB PATCH: Attach authentication to completely bypass GitHub's IP rate limit!
                     gh_headers = {"Authorization": f"Bearer {API_KEY}"} if API_KEY else {}
                     resp = requests.get(CLOUD_DATA[selected_name]["github_api_url"], headers=gh_headers, timeout=5)
                     
                     if resp.status_code == 200: 
                         CLOUD_DATA[selected_name]["available_images"] = [f["name"] for f in resp.json() if f["name"].lower().endswith(('.png', '.jpg', '.jpeg'))]
-                    else:
-                        print(f"DEBUG: GitHub Image Folder Error: {resp.status_code}")
-                except Exception as ex: 
-                    print(f"DEBUG: GitHub Exception: {ex}")
+                except Exception as ex: pass
                     
             current_subject_text.value = f"Selected: {selected_name} ☁️"
             clear_chat_click(None)
@@ -533,8 +534,9 @@ def main(page: ft.Page):
         vault_viewer.visible = False
         vault_list.visible = True
         has_files = False
-        # 🌟 WEB PATCH: Now correctly targets the new consolidated paths
-        for folder in ["assets/saved_notes", "assets/exports"]:
+        
+        # 🌟 UI FIX: Vault now strictly looks in the absolute paths we defined
+        for folder in [NOTES_DIR, EXPORTS_DIR]:
             if os.path.exists(folder):
                 for filename in os.listdir(folder):
                     if filename.endswith((".txt", ".md", ".pdf")):
@@ -617,7 +619,7 @@ def main(page: ft.Page):
                 content=ft.Column(
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.START, scroll="always",
                     controls=[
-                        ft.Text("🔎 Find Subject", color="#00ff88", weight="bold", size=16), ft.Container(height=10), search_box, ft.Container(height=5), unified_dropdown, ft.Container(height=30),
+                        ft.Text("🔎 Find Subject", color="#00ff88", weight="bold", size=16), ft.Container(height=10), search_container, ft.Container(height=5), unified_dropdown, ft.Container(height=30),
                         ft.Text("🧠 AI Personality", color="#00ff88", weight="bold", size=16), ft.Container(height=10), ft.Container(content=mode_switch, bgcolor="#222222", padding=15, border_radius=15, width=300, alignment=ft.Alignment(0, 0)), ft.Container(height=30),
                         ft.ElevatedButton(content=ft.Text("APPLY CHANGES", size=14, weight="bold", color="black"), style=ft.ButtonStyle(bgcolor="#00ff88", shape=ft.RoundedRectangleBorder(radius=10)), width=300, height=50, on_click=apply_settings_click)
                     ]
@@ -658,8 +660,8 @@ def main(page: ft.Page):
 # 5. APP LAUNCHER (RENDER-READY ENGINE)
 # ---------------------------------------------------------
 if __name__ == "__main__":
-    os.makedirs("assets/exports", exist_ok=True)
-    os.makedirs("assets/saved_notes", exist_ok=True)
+    os.makedirs(EXPORTS_DIR, exist_ok=True)
+    os.makedirs(NOTES_DIR, exist_ok=True)
     
     port = int(os.getenv("PORT", 8550))
     
