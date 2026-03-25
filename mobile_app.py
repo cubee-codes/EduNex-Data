@@ -148,7 +148,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
     concise_rule = "CRITICAL: Be extremely concise and highly formatted. DO NOT use LaTeX (like \\frac or \\sum). Use standard plain text math (a / b) and standard markdown ONLY."
 
     if is_quiz_mode:
-        user_text_string += f"\n\nTASK: Generate 5 varied, unrepeated MCQs based strictly on the provided context chunks or uploaded files. Use **Bold** for Question Text. Add an Answer Key. {concise_rule}"
+        user_text_string += f"\n\nTASK: Generate 10 varied, unrepeated MCQs based strictly on the provided context chunks or uploaded files. Use **Bold** for Question Text. Add an Answer Key. {concise_rule}"
     elif is_viva_mode:
         user_text_string += f"\n\nTASK: Generate 15 unique, rapid-fire oral Viva questions based strictly on the provided context chunks or uploaded files. Format strictly as 'Q: [Question]' followed by 'A: [One-line Answer]'. {concise_rule}"
     elif is_summary_mode:
@@ -248,12 +248,14 @@ def main(page: ft.Page):
 
     def on_file_uploaded(e: ft.FilePickerUploadEvent):
         nonlocal active_attachment_path
-        # Files upload dynamically into the assets folder we define below
         active_attachment_path = os.path.join("assets/uploads", e.file_name)
         attachment_text.value = f"✅ File Ready: {e.file_name}"
         page.update()
 
-    file_picker = ft.FilePicker(on_result=on_file_picked, on_upload=on_file_uploaded)
+    # 🌟 THE FIX: We bypass the strict __init__ checking by creating it empty, then assigning events directly!
+    file_picker = ft.FilePicker()
+    file_picker.on_result = on_file_picked
+    file_picker.on_upload = on_file_uploaded
     page.overlay.append(file_picker)
 
     def trigger_native_upload(e):
