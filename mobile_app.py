@@ -205,7 +205,7 @@ def main(page: ft.Page):
         "session_files": [],
         "current_subject": None,
         "cached_syllabus_chunks": [],
-        "last_ai_response": None  # 🌟 NEW: Dedicated memory bank for exact saves
+        "last_ai_response": None  
     }
     
     main_screen = ft.Container(expand=True, visible=True)
@@ -218,7 +218,6 @@ def main(page: ft.Page):
     feedback_text = ft.Text("", size=12, weight="bold", color="#00ff88")
     status_row = ft.Row(controls=[feedback_text], alignment=ft.MainAxisAlignment.CENTER)
     
-    # 🌟 UI FIX: Search box securely trapped inside a 300px container
     search_box = ft.TextField(label="Type to search subject...", bgcolor="#2b2b2b", color="white", border_radius=10, text_size=14)
     search_container = ft.Container(content=search_box, width=300)
     
@@ -275,7 +274,7 @@ def main(page: ft.Page):
         user_state["chat_history"].append(f"[{timestamp}] {sender}:\n{text}\n" + "-"*40 + "\n")
         
         if not is_user:
-            user_state["last_ai_response"] = text  # Always memorize the exact last response
+            user_state["last_ai_response"] = text  
             
         if len(user_state["chat_history"]) > 10:
             user_state["chat_history"].pop(0)
@@ -363,10 +362,8 @@ def main(page: ft.Page):
         return True
 
     def send_click(e):
-        if chat_box.disabled: 
-            return 
-        if not chat_box.value: 
-            return
+        if chat_box.disabled: return 
+        if not chat_box.value: return
             
         msg = chat_box.value
         chat_box.value = ""
@@ -394,65 +391,62 @@ def main(page: ft.Page):
         add_message("Prep me for Viva!", is_user=True)
         execute_ai_task("", is_viva=True)
 
-    # 🌟 DATA FIX: Bookmarks now use absolute pathing and exact memory retrieval
+    # 🌟 DIAGRAM TRANSLATOR: Converts [IMG: ...] into standard Markdown images for the Vault!
+    def format_to_markdown(text, subject_key):
+        if not subject_key or subject_key not in CLOUD_DATA:
+            return text
+        base_url = CLOUD_DATA[subject_key]["img_base_url"]
+        
+        def repl(match):
+            filename = match.group(1).strip()
+            safe_filename = urllib.parse.quote(filename)
+            return f"\n\n![Diagram]({base_url}/{safe_filename})\n\n"
+            
+        return re.sub(r'\[IMG:(.*?)\]', repl, text)
+
+    # 🌟 FIXED: Saves as Markdown (.md) so diagrams are preserved!
     def bookmark_click(e):
         if not user_state.get("last_ai_response"): 
             show_feedback("⚠️ Chat is empty! Nothing to bookmark.", color="#ff4444")
             return
             
         os.makedirs(NOTES_DIR, exist_ok=True)
-        save_path = os.path.join(NOTES_DIR, "Revision_List.txt")
+        save_path = os.path.join(NOTES_DIR, "Revision_List.md") # Changed to .md
+        
+        md_text = format_to_markdown(user_state["last_ai_response"], user_state["current_subject"])
         
         try:
             with open(save_path, "a", encoding="utf-8") as f:
-                f.write(f"\n--- ⭐ Bookmarked on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')} ---\nSubject: {user_state['current_subject']}\n{user_state['last_ai_response']}\n")
+                f.write(f"\n# ⭐ Bookmarked on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}\n**Subject:** {user_state['current_subject']}\n\n{md_text}\n---\n")
             show_feedback("⭐ Saved to Revision Vault!", color="#ffd700")
         except Exception as ex: 
             print(f"DEBUG: Save Error - {ex}")
             traceback.print_exc()
             show_feedback("❌ Failed to save.", color="#ff4444")
 
-    # 🌟 DATA FIX: PDF exports use absolute pathing
+    # 🌟 FIXED: Exports as Markdown (.md) instead of PDF to preserve Diagrams!
     def export_click(e):
         if not user_state.get("last_ai_response"): 
             show_feedback("⚠️ Chat is empty! Nothing to export.", color="#ff4444")
             return
             
-        last_ai_msg = user_state["last_ai_response"]
-        last_ai_msg = re.sub(r'\[IMG:.*?\]', '[Diagram available in EduNex App]', last_ai_msg)
-        
-        clean_text = last_ai_msg.encode('ascii', 'ignore').decode('ascii')
-        
         os.makedirs(EXPORTS_DIR, exist_ok=True)
-        filename = f"EduNex_Guide_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.pdf"
+        filename = f"EduNex_Guide_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.md"
         filepath = os.path.join(EXPORTS_DIR, filename)
         
+        md_text = format_to_markdown(user_state["last_ai_response"], user_state["current_subject"])
+        
         try:
-            from fpdf import FPDF
-            class PDF(FPDF):
-                def header(self):
-                    self.set_font('Arial', 'B', 15)
-                    self.cell(0, 10, 'EduNex AI Study Guide', 0, 1, 'C')
-                    self.set_font('Arial', 'I', 10)
-                    self.cell(0, 10, f"Subject: {user_state['current_subject']}", 0, 1, 'C')
-                    self.ln(10)
-                def footer(self):
-                    self.set_y(-15)
-                    self.set_font('Arial', 'I', 8)
-                    self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
-            pdf = PDF()
-            pdf.add_page()
-            pdf.set_font("Arial", size=11)
-            pdf.multi_cell(0, 7, clean_text)
-            pdf.output(filepath)
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(f"# EduNex AI Study Guide\n**Subject:** {user_state['current_subject']}\n\n{md_text}")
             
-            show_feedback("📄 PDF generated! Downloading...", color="#00ff88")
+            show_feedback("📄 Export generated! Downloading...", color="#00ff88")
             page.launch_url(f"/exports/{filename}")
             
         except Exception as ex: 
-            print(f"DEBUG: PDF Error - {ex}")
+            print(f"DEBUG: Export Error - {ex}")
             traceback.print_exc()
-            show_feedback("❌ Failed to generate PDF.", color="#ff4444")
+            show_feedback("❌ Failed to export.", color="#ff4444")
 
     def clear_chat_click(e):
         chat_history.controls.clear()
@@ -535,11 +529,10 @@ def main(page: ft.Page):
         vault_list.visible = True
         has_files = False
         
-        # 🌟 UI FIX: Vault now strictly looks in the absolute paths we defined
         for folder in [NOTES_DIR, EXPORTS_DIR]:
             if os.path.exists(folder):
                 for filename in os.listdir(folder):
-                    if filename.endswith((".txt", ".md", ".pdf")):
+                    if filename.endswith((".txt", ".md")):
                         has_files = True
                         file_path = os.path.join(folder, filename)
                         vault_list.controls.append(ft.ElevatedButton(content=ft.Text(f"📄 {filename}", color="white"), style=ft.ButtonStyle(bgcolor="#222222", shape=ft.RoundedRectangleBorder(radius=10), padding=20), width=350, on_click=lambda e, fp=file_path: open_vault_file(fp)))
@@ -551,19 +544,33 @@ def main(page: ft.Page):
         page.update()
         
     def open_vault_file(filepath):
-        if filepath.endswith(".pdf"):
-            filename = os.path.basename(filepath)
-            page.launch_url(f"/exports/{filename}")
-        else:
-            try:
-                with open(filepath, "r", encoding="utf-8") as f: content = f.read()
-                vault_viewer.controls.clear()
-                vault_viewer.controls.append(ft.ElevatedButton(content=ft.Text("← Close File", color="#ff4444"), style=ft.ButtonStyle(bgcolor="#222222"), on_click=lambda e: (setattr(vault_viewer, 'visible', False), setattr(vault_list, 'visible', True), page.update())))
-                vault_viewer.controls.append(ft.Divider(color="#333333"))
-                vault_viewer.controls.append(ft.Markdown(content, extension_set=ft.MarkdownExtensionSet.GITHUB_WEB, md_style_sheet=ft.MarkdownStyleSheet(p_text_style=ft.TextStyle(size=14, color="white"))))
-                vault_list.visible, vault_viewer.visible = False, True
-                page.update()
-            except Exception: pass
+        try:
+            with open(filepath, "r", encoding="utf-8") as f: 
+                content = f.read()
+            
+            # Figure out the exact URL to download this specific file from the server
+            folder_name = os.path.basename(os.path.dirname(filepath))
+            file_name = os.path.basename(filepath)
+            download_url = f"/{folder_name}/{file_name}"
+
+            vault_viewer.controls.clear()
+            
+            # 🌟 NEW: The Download Button inside the Vault Viewer!
+            action_row = ft.Row([
+                ft.ElevatedButton(content=ft.Text("← Close File", color="#ff4444"), bgcolor="#222222", on_click=lambda e: (setattr(vault_viewer, 'visible', False), setattr(vault_list, 'visible', True), page.update())),
+                ft.ElevatedButton(content=ft.Text("⬇️ Download Note", color="#00ff88"), bgcolor="#222222", on_click=lambda e: page.launch_url(download_url))
+            ])
+            
+            vault_viewer.controls.append(action_row)
+            vault_viewer.controls.append(ft.Divider(color="#333333"))
+            
+            # 🌟 NEW: This natively renders the images inside the Vault!
+            vault_viewer.controls.append(ft.Markdown(content, selectable=True, extension_set=ft.MarkdownExtensionSet.GITHUB_WEB))
+            
+            vault_list.visible, vault_viewer.visible = False, True
+            page.update()
+        except Exception as ex: 
+            print(f"Error opening vault file: {ex}")
 
     main_screen.content = ft.Column(
         expand=True, spacing=0,
@@ -574,7 +581,7 @@ def main(page: ft.Page):
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     controls=[
                         ft.Row(controls=[ft.ElevatedButton(content=ft.Text("☰", size=24, color="#00ff88"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.CircleBorder(), padding=5), on_click=go_settings), ft.Text("EduNex", size=20, weight="bold", color="#00ff88")]), 
-                        ft.Row(controls=[ft.ElevatedButton(content=ft.Text("📁 Vault", size=12, color="#00e5ff"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#00e5ff"), padding=10), on_click=load_vault_files), ft.ElevatedButton(content=ft.Text("📄 PDF", size=12, color="#00ff88"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#00ff88"), padding=10), on_click=export_click), ft.ElevatedButton(content=ft.Text("Clear", size=12, color="#ff4444"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#ff4444"), padding=10), on_click=clear_chat_click)])
+                        ft.Row(controls=[ft.ElevatedButton(content=ft.Text("📁 Vault", size=12, color="#00e5ff"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#00e5ff"), padding=10), on_click=load_vault_files), ft.ElevatedButton(content=ft.Text("📄 Export", size=12, color="#00ff88"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#00ff88"), padding=10), on_click=export_click), ft.ElevatedButton(content=ft.Text("Clear", size=12, color="#ff4444"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#ff4444"), padding=10), on_click=clear_chat_click)])
                     ]
                 )
             ),
