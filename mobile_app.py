@@ -145,7 +145,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
                 "image_url": {"url": f"data:{f_obj['inline_data']['mime_type']};base64,{f_obj['inline_data']['data']}"}
             })
 
-    concise_rule = "CRITICAL: Be extremely concise and highly formatted. DO NOT use LaTeX (like \\frac or \\sum). Use standard plain text math (a / b) and standard markdown ONLY."
+    concise_rule = "CRITICAL: Be extremely concise and highly formatted. DO NOT use LaTeX (like a/b). Use standard plain text math and standard markdown ONLY."
 
     if is_quiz_mode:
         user_text_string += f"\n\nTASK: Generate 10 varied, unrepeated MCQs based strictly on the provided context chunks or uploaded files. Use **Bold** for Question Text. Add an Answer Key. {concise_rule}"
@@ -216,50 +216,6 @@ def main(page: ft.Page):
 
     chat_history = ft.ListView(expand=True, spacing=15, auto_scroll=True, padding=15)
     current_subject_text = ft.Text("No Subject Selected", size=12, color="grey", italic=True)
-    
-    attachment_text = ft.Text("", size=12, color="#00ff88", italic=True)
-    active_attachment_path = None
-
-    def cancel_upload(e):
-        nonlocal active_attachment_path
-        active_attachment_path = None
-        attachment_indicator.visible = False
-        show_feedback("❌ Upload cancelled.", color="#ff4444")
-
-    cancel_btn = ft.ElevatedButton(
-        content=ft.Text("❌ Cancel", color="#ff4444", size=12, weight="bold"), 
-        style=ft.ButtonStyle(bgcolor="#222222", shape=ft.RoundedRectangleBorder(radius=8), padding=5),
-        on_click=cancel_upload, 
-        tooltip="Cancel Upload"
-    )
-    
-    attachment_indicator = ft.Row([attachment_text, cancel_btn], alignment=ft.MainAxisAlignment.CENTER, visible=False)
-
-    # 🌟 WEB PATCH 1: Flet Native FilePicker 
-    def on_file_picked(e: ft.FilePickerResultEvent):
-        if e.files:
-            f = e.files[0]
-            attachment_text.value = f"⏳ Uploading: {f.name}..."
-            attachment_indicator.visible = True
-            page.update()
-            
-            upload_url = page.get_upload_url(f.name, 60)
-            file_picker.upload([ft.FilePickerUploadFile(f.name, upload_url=upload_url)])
-
-    def on_file_uploaded(e: ft.FilePickerUploadEvent):
-        nonlocal active_attachment_path
-        active_attachment_path = os.path.join("assets/uploads", e.file_name)
-        attachment_text.value = f"✅ File Ready: {e.file_name}"
-        page.update()
-
-    # 🌟 THE FIX: We bypass the strict __init__ checking by creating it empty, then assigning events directly!
-    file_picker = ft.FilePicker()
-    file_picker.on_result = on_file_picked
-    file_picker.on_upload = on_file_uploaded
-    page.overlay.append(file_picker)
-
-    def trigger_native_upload(e):
-        file_picker.pick_files(allowed_extensions=["txt", "png", "jpg", "jpeg"])
 
     feedback_text = ft.Text("", size=12, weight="bold", color="#00ff88")
     status_row = ft.Row(controls=[feedback_text], alignment=ft.MainAxisAlignment.CENTER)
@@ -311,7 +267,7 @@ def main(page: ft.Page):
         main_screen.visible, settings_screen.visible, vault_screen.visible = True, False, False
         page.update()
     
-    def add_message(text, is_user=False, is_quiz=False, is_summary=False, is_viva=False, has_attachment=False):
+    def add_message(text, is_user=False, is_quiz=False, is_summary=False, is_viva=False):
         sender = "You" if is_user else "EduNex"
         timestamp = datetime.datetime.now().strftime("%H:%M")
         
@@ -336,9 +292,6 @@ def main(page: ft.Page):
 
         message_elements = []
         if is_user:
-            if has_attachment:
-                message_elements.append(ft.Text("📎 [File Sent]", color="#00ff88", size=12, italic=True))
-                show_feedback("📎 File processed & saved to memory!", color="#00e5ff")
             message_elements.append(ft.Text(text, color="white", size=15))
         else:
             parts = re.split(r'\[IMG:(.*?)\]', text)
@@ -363,11 +316,8 @@ def main(page: ft.Page):
         page.update()
 
     def execute_ai_task(msg, is_quiz=False, is_summary=False, is_viva=False):
-        nonlocal active_attachment_path
-        
         chat_box.disabled = True
         send_button.disabled = True
-        attachment_indicator.visible = False
         
         loading_bubble = ft.Container(
             content=ft.Row([
@@ -378,9 +328,6 @@ def main(page: ft.Page):
         )
         chat_history.controls.append(loading_bubble)
         page.update()
-
-        saved_path = active_attachment_path
-        active_attachment_path = None
         
         def background_worker():
             try:
@@ -388,7 +335,7 @@ def main(page: ft.Page):
                     user_input=msg, is_exam_mode=mode_switch.value, chat_history_list=user_state["chat_history"], 
                     session_files=user_state["session_files"], cached_syllabus_chunks=user_state["cached_syllabus_chunks"], 
                     current_subject_key=user_state["current_subject"], is_quiz_mode=is_quiz, is_summary_mode=is_summary, 
-                    is_viva_mode=is_viva, attached_file_path=saved_path
+                    is_viva_mode=is_viva, attached_file_path=None
                 )
                 if loading_bubble in chat_history.controls:
                     chat_history.controls.remove(loading_bubble)
@@ -414,15 +361,14 @@ def main(page: ft.Page):
     def send_click(e):
         if chat_box.disabled: 
             return 
-        if not chat_box.value and not active_attachment_path: 
+        if not chat_box.value: 
             return
             
         msg = chat_box.value
-        
         chat_box.value = ""
         page.update()
         
-        add_message(msg if msg else "Here is a file, analyze it for me.", is_user=True, has_attachment=(active_attachment_path is not None))
+        add_message(msg, is_user=True)
         execute_ai_task(msg)
 
     chat_box.on_submit = send_click
@@ -460,7 +406,6 @@ def main(page: ft.Page):
         except Exception: 
             pass
 
-    # 🌟 WEB PATCH 2: Web-Safe PDF Generation & Browser Downloader
     def export_click(e):
         hist = user_state["chat_history"]
         last_ai_msg = next((msg for msg in reversed(hist) if "EduNex:\n" in msg), None)
@@ -498,23 +443,17 @@ def main(page: ft.Page):
             pdf.output(filepath)
             
             show_feedback("📄 PDF generated! Downloading...", color="#00ff88")
-            
-            # This securely commands the user's web browser to download the file directly to their downloads folder
             page.launch_url(f"/exports/{filename}")
             
         except Exception: 
             show_feedback("❌ Failed to generate PDF.", color="#ff4444")
 
     def clear_chat_click(e):
-        nonlocal active_attachment_path
         chat_history.controls.clear()
         user_state["chat_history"] = []
         user_state["session_files"] = [] 
         
-        active_attachment_path = None
-        attachment_indicator.visible = False
-        
-        show_feedback("🗑️ Chat & File Memory Cleared!", color="#ff4444")
+        show_feedback("🗑️ Chat Memory Cleared!", color="#ff4444")
         page.update()
 
     def on_search_change(e):
@@ -648,10 +587,8 @@ def main(page: ft.Page):
                                 ft.ElevatedButton(content=ft.Text("⭐ Mark", color="#ff8800", weight="bold"), style=ft.ButtonStyle(bgcolor="#CC1a0a00", side=ft.BorderSide(1, "#ff8800"), shape=ft.RoundedRectangleBorder(radius=20)), on_click=bookmark_click)
                             ]
                         ), 
-                        ft.Container(content=attachment_indicator, padding=10),
                         ft.Row(
                             controls=[
-                                ft.ElevatedButton(content=ft.Text("Upload", weight="bold", color="#00e5ff"), style=ft.ButtonStyle(bgcolor="#44222222", shape=ft.RoundedRectangleBorder(radius=20)), on_click=trigger_native_upload),
                                 chat_box, ft.Container(width=5), send_button
                             ]
                         )
@@ -712,21 +649,16 @@ def main(page: ft.Page):
 # 5. APP LAUNCHER (RENDER-READY ENGINE)
 # ---------------------------------------------------------
 if __name__ == "__main__":
-    # Ensure web storage directories exist
     os.makedirs("assets/exports", exist_ok=True)
-    os.makedirs("assets/uploads", exist_ok=True)
     
-    # Automatically bind to Render's dynamic port (or default to 8550 for local testing)
     port = int(os.getenv("PORT", 8550))
     
     print(f"🌍 Starting EduNex Web Server on port {port}...")
     
-    # Initialize the app with secure asset and upload routing
     ft.app(
         target=main, 
         view="web_browser", 
         port=port, 
         host="0.0.0.0", 
-        assets_dir="assets", 
-        upload_dir="assets/uploads"
+        assets_dir="assets"
     )
