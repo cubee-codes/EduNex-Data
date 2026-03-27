@@ -16,6 +16,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 NOTES_DIR = os.path.join(ASSETS_DIR, "saved_notes")
 EXPORTS_DIR = os.path.join(ASSETS_DIR, "exports")
+UPLOADS_DIR = os.path.join(ASSETS_DIR, "uploads") # Restored Uploads Folder
 
 # ---------------------------------------------------------
 # 1. SECURE CONFIGURATION (GITHUB MODELS API)
@@ -210,7 +211,6 @@ def main(page: ft.Page):
     
     main_screen = ft.Container(expand=True, visible=True)
     settings_screen = ft.Container(expand=True, visible=False, padding=20)
-    vault_screen = ft.Container(expand=True, visible=False, padding=20)
 
     chat_history = ft.ListView(expand=True, spacing=15, auto_scroll=True, padding=15)
     current_subject_text = ft.Text("No Subject Selected", size=12, color="grey", italic=True)
@@ -223,9 +223,6 @@ def main(page: ft.Page):
     
     unified_dropdown = ft.Dropdown(label="Select from list", bgcolor="#2b2b2b", color="white", border_color="#444", border_radius=10, options=[ft.dropdown.Option(key) for key in CLOUD_DATA.keys()], width=300)
     mode_switch = ft.Switch(label="Exam Mode (Strict)", active_color="#ff4444", inactive_thumb_color="#00ff88", value=False)
-
-    vault_list = ft.ListView(expand=True, spacing=10)
-    vault_viewer = ft.Column(expand=True, scroll="always", visible=False)
 
     chat_box = ft.TextField(
         hint_text="Ask a question... (Press Enter to Send)", 
@@ -242,10 +239,48 @@ def main(page: ft.Page):
         content=ft.Text("➤", color="black", size=18, weight="bold"), 
         style=ft.ButtonStyle(bgcolor="#00ff88", shape=ft.CircleBorder(), padding=15)
     )
+
+    # 🌟 RESTORED: FilePicker, Attachment Status, and Cancel Buttons
+    attachment_text = ft.Text("", size=12, color="#00ff88", italic=True)
+    active_attachment_path = None
+
+    def cancel_upload(e):
+        nonlocal active_attachment_path
+        active_attachment_path = None
+        attachment_indicator.visible = False
+        show_feedback("❌ Upload cancelled.", color="#ff4444")
+
+    cancel_btn = ft.ElevatedButton(
+        content=ft.Text("❌ Cancel", color="#ff4444", size=12, weight="bold"), 
+        style=ft.ButtonStyle(bgcolor="#222222", shape=ft.RoundedRectangleBorder(radius=8), padding=5),
+        on_click=cancel_upload, 
+        tooltip="Cancel Upload"
+    )
     
-    # Empty FilePicker to avoid version bugs
+    attachment_indicator = ft.Row([attachment_text, cancel_btn], alignment=ft.MainAxisAlignment.CENTER, visible=False)
+
+    def on_file_picked(e: ft.FilePickerResultEvent):
+        if e.files:
+            f = e.files[0]
+            attachment_text.value = f"⏳ Uploading: {f.name}..."
+            attachment_indicator.visible = True
+            page.update()
+            upload_url = page.get_upload_url(f.name, 60)
+            file_picker.upload([ft.FilePickerUploadFile(f.name, upload_url=upload_url)])
+
+    def on_file_uploaded(e: ft.FilePickerUploadEvent):
+        nonlocal active_attachment_path
+        active_attachment_path = os.path.join(UPLOADS_DIR, e.file_name)
+        attachment_text.value = f"✅ File Ready: {e.file_name}"
+        page.update()
+
     file_picker = ft.FilePicker()
+    file_picker.on_result = on_file_picked
+    file_picker.on_upload = on_file_uploaded
     page.overlay.append(file_picker)
+
+    def trigger_upload(e):
+        file_picker.pick_files(allowed_extensions=["txt", "png", "jpg", "jpeg"])
 
     def show_feedback(message, color="#00ff88"):
         feedback_text.value = message
@@ -264,14 +299,14 @@ def main(page: ft.Page):
 
     def go_settings(e):
         search_box.value = ""
-        main_screen.visible, settings_screen.visible, vault_screen.visible = False, True, False
+        main_screen.visible, settings_screen.visible = False, True
         page.update()
 
     def go_home(e):
-        main_screen.visible, settings_screen.visible, vault_screen.visible = True, False, False
+        main_screen.visible, settings_screen.visible = True, False
         page.update()
     
-    def add_message(text, is_user=False, is_quiz=False, is_summary=False, is_viva=False):
+    def add_message(text, is_user=False, is_quiz=False, is_summary=False, is_viva=False, has_attachment=False):
         sender = "You" if is_user else "EduNex"
         timestamp = datetime.datetime.now().strftime("%H:%M")
         
@@ -299,6 +334,9 @@ def main(page: ft.Page):
 
         message_elements = []
         if is_user:
+            if has_attachment:
+                message_elements.append(ft.Text("📎 [File Sent]", color="#00ff88", size=12, italic=True))
+                show_feedback("📎 File processed & saved to memory!", color="#00e5ff")
             message_elements.append(ft.Text(text, color="white", size=15))
         else:
             parts = re.split(r'\[IMG:(.*?)\]', text)
@@ -322,7 +360,7 @@ def main(page: ft.Page):
         chat_history.update()
         page.update()
 
-    def execute_ai_task(msg, is_quiz=False, is_summary=False, is_viva=False):
+    def execute_ai_task(msg, attached_file, is_quiz=False, is_summary=False, is_viva=False):
         chat_box.disabled = True
         send_button.disabled = True
         
@@ -342,7 +380,7 @@ def main(page: ft.Page):
                     user_input=msg, is_exam_mode=mode_switch.value, chat_history_list=user_state["chat_history"], 
                     session_files=user_state["session_files"], cached_syllabus_chunks=user_state["cached_syllabus_chunks"], 
                     current_subject_key=user_state["current_subject"], is_quiz_mode=is_quiz, is_summary_mode=is_summary, 
-                    is_viva_mode=is_viva, attached_file_path=None
+                    is_viva_mode=is_viva, attached_file_path=attached_file
                 )
                 if loading_bubble in chat_history.controls:
                     chat_history.controls.remove(loading_bubble)
@@ -366,15 +404,22 @@ def main(page: ft.Page):
         return True
 
     def send_click(e):
+        nonlocal active_attachment_path
         if chat_box.disabled: return 
-        if not chat_box.value: return
+        if not chat_box.value and not active_attachment_path: return
             
         msg = chat_box.value
         chat_box.value = ""
+        
+        add_message(msg if msg else "Here is a file, analyze it for me.", is_user=True, has_attachment=(active_attachment_path is not None))
+        
+        # Save path locally, then clear global immediately so UI updates cleanly
+        saved_path = active_attachment_path
+        active_attachment_path = None
+        attachment_indicator.visible = False
         page.update()
         
-        add_message(msg, is_user=True)
-        execute_ai_task(msg)
+        execute_ai_task(msg, attached_file=saved_path)
 
     chat_box.on_submit = send_click
     send_button.on_click = send_click
@@ -383,51 +428,30 @@ def main(page: ft.Page):
         if not is_subject_loaded(): return
         topic = e.control.data
         add_message(f"Cheat Sheet: {topic}", is_user=True)
-        execute_ai_task(topic, is_summary=True)
+        execute_ai_task(topic, attached_file=None, is_summary=True)
 
     def quiz_click(e):
         if not is_subject_loaded(): return
         add_message("Quiz Me!", is_user=True)
-        execute_ai_task("", is_quiz=True)
+        execute_ai_task("", attached_file=None, is_quiz=True)
 
     def viva_click(e):
         if not is_subject_loaded(): return
         add_message("Prep me for Viva!", is_user=True)
-        execute_ai_task("", is_viva=True)
+        execute_ai_task("", attached_file=None, is_viva=True)
 
-    # Remains identical - Saves raw text to the in-app Vault
-    def bookmark_click(e):
+    def download_note_click(e):
         if not user_state.get("last_ai_response"): 
-            show_feedback("⚠️ Chat is empty! Nothing to bookmark.", color="#ff4444")
-            return
-            
-        os.makedirs(NOTES_DIR, exist_ok=True)
-        save_path = os.path.join(NOTES_DIR, "Revision_List.txt") 
-        
-        clean_text = re.sub(r'\[IMG:.*?\]', '[Diagram available in EduNex App]', user_state["last_ai_response"])
-        
-        try:
-            with open(save_path, "a", encoding="utf-8") as f:
-                f.write(f"\n--- ⭐ Bookmarked on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')} ---\nSubject: {user_state['current_subject']}\n\n{clean_text}\n\n")
-            show_feedback("⭐ Saved to Revision Vault!", color="#ffd700")
-        except Exception as ex: 
-            print(f"DEBUG: Save Error - {ex}")
-            traceback.print_exc()
-            show_feedback("❌ Failed to save.", color="#ff4444")
-
-    # 🌟 NEW JS DOWNLOADER: Forces a clean .txt download to the device
-    def export_click(e):
-        if not user_state.get("last_ai_response"): 
-            show_feedback("⚠️ Chat is empty! Nothing to export.", color="#ff4444")
+            show_feedback("⚠️ Chat is empty! Nothing to save.", color="#ff4444")
             return
             
         os.makedirs(EXPORTS_DIR, exist_ok=True)
         
-        clean_text = re.sub(r'\[IMG:.*?\]', '[Diagram available in EduNex App]', user_state["last_ai_response"])
-        final_text = f"--- EduNex AI Study Guide ---\nSubject: {user_state['current_subject']}\nDate: {datetime.datetime.now().strftime('%Y-%m-%d')}\n\n{clean_text}"
+        raw_text = re.sub(r'\[IMG:.*?\]', '[Diagram available in EduNex App]', user_state["last_ai_response"])
+        final_text = f"--- EduNex AI Study Guide ---\nSubject: {user_state['current_subject']}\nDate: {datetime.datetime.now().strftime('%Y-%m-%d')}\n\n{raw_text}"
         
         js_safe_text = final_text.replace('\\', '\\\\').replace('`', '\\`').replace('${', '\\${')
-        filename = f"EduNex_Guide_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
+        filename = f"EduNex_Note_{datetime.datetime.now().strftime('%H%M%S')}.txt"
         html_filename = "downloader.html"
         
         html_content = f"""<!DOCTYPE html>
@@ -445,7 +469,7 @@ def main(page: ft.Page):
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
-                setTimeout(() => window.close(), 500);
+                setTimeout(() => window.close(), 500); 
             </script>
         </body></html>"""
         
@@ -461,10 +485,14 @@ def main(page: ft.Page):
             show_feedback("❌ Failed to download.", color="#ff4444")
 
     def clear_chat_click(e):
+        nonlocal active_attachment_path
         chat_history.controls.clear()
         user_state["chat_history"] = []
         user_state["session_files"] = [] 
         user_state["last_ai_response"] = None
+        
+        active_attachment_path = None
+        attachment_indicator.visible = False
         
         show_feedback("🗑️ Chat Memory Cleared!", color="#ff4444")
         page.update()
@@ -535,82 +563,6 @@ def main(page: ft.Page):
         import threading
         threading.Thread(target=fetch_cloud_data, daemon=True).start()
 
-    def load_vault_files(e):
-        vault_list.controls.clear()
-        vault_viewer.visible = False
-        vault_list.visible = True
-        has_files = False
-        
-        for folder in [NOTES_DIR, EXPORTS_DIR]:
-            if os.path.exists(folder):
-                for filename in os.listdir(folder):
-                    if filename.endswith(".txt"):  
-                        has_files = True
-                        file_path = os.path.join(folder, filename)
-                        vault_list.controls.append(ft.ElevatedButton(content=ft.Text(f"📄 {filename}", color="white"), style=ft.ButtonStyle(bgcolor="#222222", shape=ft.RoundedRectangleBorder(radius=10), padding=20), width=350, on_click=lambda e, fp=file_path: open_vault_file(fp)))
-        
-        if not has_files: 
-            vault_list.controls.append(ft.Text("No saved notes found yet!", color="grey", italic=True))
-            
-        main_screen.visible, settings_screen.visible, vault_screen.visible = False, False, True
-        page.update()
-        
-    def open_vault_file(filepath):
-        try:
-            with open(filepath, "r", encoding="utf-8") as f: 
-                content = f.read()
-            
-            file_name = os.path.basename(filepath)
-
-            # 🌟 NEW JS DOWNLOADER: Forces device download of the specific Vault file
-            def force_download_vault(e):
-                os.makedirs(EXPORTS_DIR, exist_ok=True)
-                js_safe_text = content.replace('\\', '\\\\').replace('`', '\\`').replace('${', '\\${')
-                html_filename = "vault_downloader.html"
-                
-                html_content = f"""<!DOCTYPE html>
-                <html><head><title>Downloading...</title></head>
-                <body style="background-color: #111; color: #00ff88; font-family: sans-serif; text-align: center; margin-top: 50px;">
-                    <h2>Downloading {file_name}...</h2>
-                    <script>
-                        const text = `{js_safe_text}`;
-                        const blob = new Blob([text], {{ type: 'text/plain' }});
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = '{file_name}';
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                        setTimeout(() => window.close(), 500);
-                    </script>
-                </body></html>"""
-                
-                try:
-                    with open(os.path.join(EXPORTS_DIR, html_filename), "w", encoding="utf-8") as f:
-                        f.write(html_content)
-                    page.launch_url(f"/exports/{html_filename}")
-                except Exception as ex: 
-                    print(f"Error creating vault download: {ex}")
-
-            vault_viewer.controls.clear()
-            
-            action_row = ft.Row([
-                ft.ElevatedButton(content=ft.Text("← Close File", color="#ff4444"), bgcolor="#222222", on_click=lambda e: (setattr(vault_viewer, 'visible', False), setattr(vault_list, 'visible', True), page.update())),
-                ft.ElevatedButton(content=ft.Text("⬇️ Download Note", color="#00ff88"), bgcolor="#222222", on_click=force_download_vault)
-            ])
-            
-            vault_viewer.controls.append(action_row)
-            vault_viewer.controls.append(ft.Divider(color="#333333"))
-            
-            vault_viewer.controls.append(ft.Text(content, color="white", selectable=True))
-            
-            vault_list.visible, vault_viewer.visible = False, True
-            page.update()
-        except Exception as ex: 
-            print(f"Error opening vault file: {ex}")
-
     main_screen.content = ft.Column(
         expand=True, spacing=0,
         controls=[
@@ -620,7 +572,10 @@ def main(page: ft.Page):
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     controls=[
                         ft.Row(controls=[ft.ElevatedButton(content=ft.Text("☰", size=24, color="#00ff88"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.CircleBorder(), padding=5), on_click=go_settings), ft.Text("EduNex", size=20, weight="bold", color="#00ff88")]), 
-                        ft.Row(controls=[ft.ElevatedButton(content=ft.Text("📁 Vault", size=12, color="#00e5ff"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#00e5ff"), padding=10), on_click=load_vault_files), ft.ElevatedButton(content=ft.Text("📄 Export", size=12, color="#00ff88"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#00ff88"), padding=10), on_click=export_click), ft.ElevatedButton(content=ft.Text("Clear", size=12, color="#ff4444"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#ff4444"), padding=10), on_click=clear_chat_click)])
+                        ft.Row(controls=[
+                            ft.ElevatedButton(content=ft.Text("⬇️ Save Note", size=12, color="#00ff88"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#00ff88"), padding=10), on_click=download_note_click), 
+                            ft.ElevatedButton(content=ft.Text("Clear", size=12, color="#ff4444"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#ff4444"), padding=10), on_click=clear_chat_click)
+                        ])
                     ]
                 )
             ),
@@ -641,11 +596,13 @@ def main(page: ft.Page):
                             controls=[
                                 ft.ElevatedButton(content=ft.Text("🎯 Quiz", color="#ffd700", weight="bold"), style=ft.ButtonStyle(bgcolor="#CC1a1a00", side=ft.BorderSide(1, "#ffd700"), shape=ft.RoundedRectangleBorder(radius=20)), on_click=quiz_click),
                                 ft.ElevatedButton(content=ft.Text("🗣️ Viva", color="#00e5ff", weight="bold"), style=ft.ButtonStyle(bgcolor="#CC001a1a", side=ft.BorderSide(1, "#00e5ff"), shape=ft.RoundedRectangleBorder(radius=20)), on_click=viva_click),
-                                ft.ElevatedButton(content=ft.Text("⭐ Mark", color="#ff8800", weight="bold"), style=ft.ButtonStyle(bgcolor="#CC1a0a00", side=ft.BorderSide(1, "#ff8800"), shape=ft.RoundedRectangleBorder(radius=20)), on_click=bookmark_click)
                             ]
                         ), 
+                        ft.Container(content=attachment_indicator, padding=10),
                         ft.Row(
                             controls=[
+                                # 🌟 RESTORED: Upload Button!
+                                ft.ElevatedButton(content=ft.Text("Upload", weight="bold", color="#00e5ff"), style=ft.ButtonStyle(bgcolor="#44222222", shape=ft.RoundedRectangleBorder(radius=20)), on_click=trigger_upload),
                                 chat_box, ft.Container(width=5), send_button
                             ]
                         )
@@ -674,15 +631,6 @@ def main(page: ft.Page):
         ]
     )
 
-    vault_screen.content = ft.Column(
-        controls=[
-            ft.Container(height=20),
-            ft.Row(controls=[ft.ElevatedButton(content=ft.Text("← Back", color="white"), style=ft.ButtonStyle(bgcolor="#333333"), on_click=go_home), ft.Text("Study Vault", size=22, weight="bold", color="#00e5ff")]),
-            ft.Divider(color="grey"),
-            vault_list, vault_viewer
-        ]
-    )
-
     premium_background = ft.Container(
         expand=True,
         gradient=ft.LinearGradient(
@@ -697,7 +645,7 @@ def main(page: ft.Page):
             expand=True,
             controls=[
                 premium_background, 
-                ft.Stack(expand=True, controls=[main_screen, settings_screen, vault_screen])
+                ft.Stack(expand=True, controls=[main_screen, settings_screen])
             ]
         )
     )
@@ -707,7 +655,7 @@ def main(page: ft.Page):
 # ---------------------------------------------------------
 if __name__ == "__main__":
     os.makedirs(EXPORTS_DIR, exist_ok=True)
-    os.makedirs(NOTES_DIR, exist_ok=True)
+    os.makedirs(UPLOADS_DIR, exist_ok=True)
     
     port = int(os.getenv("PORT", 8550))
     
@@ -718,5 +666,6 @@ if __name__ == "__main__":
         view="web_browser", 
         port=port, 
         host="0.0.0.0", 
-        assets_dir="assets"
+        assets_dir="assets",
+        upload_dir="assets/uploads" # 🌟 RESTORED: Vital for receiving files
     )
