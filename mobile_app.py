@@ -160,7 +160,6 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
         style = "⚠️ EXAM MODE: Bullet points, keywords." if is_exam_mode else "🎓 TUTOR MODE: Analogies, deep explanation."
         user_text_string += f"\n\n{history_context}INSTRUCTION: {style}\n{image_instruction}\n{concise_rule}\nCRITICAL RULE: Prioritize the UPLOADED REFERENCE FILE if provided.\nUSER INPUT: {user_input}"
 
-    # 🌟 NEW VISION FOCUS: Explicitly force the AI to read the uploaded image
     if has_image:
         user_text_string = "CRITICAL: The user has attached an image or file. YOU MUST ANALYZE IT DIRECTLY to answer their query.\n\n" + user_text_string
         user_message_content = [{"type": "text", "text": user_text_string}] + image_list
@@ -246,7 +245,6 @@ def main(page: ft.Page):
         style=ft.ButtonStyle(bgcolor="#00ff88", shape=ft.CircleBorder(), padding=15)
     )
 
-    # --- THE SECURE UPLOAD SYSTEM ---
     attachment_text = ft.Text("", size=12, color="#00ff88", italic=True)
     active_attachment_path = None
 
@@ -272,16 +270,14 @@ def main(page: ft.Page):
         if e.files:
             f = e.files[0]
             attachment_text.value = f"⏳ Uploading {f.name} to server..."
-            attachment_text.color = "#ff8800" # Orange for processing
+            attachment_text.color = "#ff8800"
             attachment_indicator.visible = True
             
-            # 🌟 UI LOCK: Prevent user from hitting send while file is in transit!
             chat_box.disabled = True 
             send_button.disabled = True
             page.update()
             
             try:
-                # Intercept internal routing to force public Render routing
                 raw_url = page.get_upload_url(f.name, 60)
                 parsed = urllib.parse.urlparse(raw_url)
                 safe_url = f"{parsed.path}?{parsed.query}"
@@ -300,12 +296,10 @@ def main(page: ft.Page):
             attachment_text.value = f"❌ Upload Failed: {e.error}"
             attachment_text.color = "#ff4444"
         else:
-            # 🌟 ABSOLUTE PATHING: Guarantee Python sees the exact file Flet saved
             active_attachment_path = os.path.join(UPLOADS_DIR, e.file_name)
             attachment_text.value = f"✅ File Ready: {e.file_name}"
             attachment_text.color = "#00ff88"
             
-        # 🌟 UI UNLOCK: Upload finished, user can now chat safely
         chat_box.disabled = False
         send_button.disabled = False
         page.update()
@@ -371,7 +365,6 @@ def main(page: ft.Page):
         message_elements = []
         if is_user:
             if has_attachment:
-                # 🌟 THE INDICATOR: This proves the RAG engine actually grabbed your file!
                 message_elements.append(ft.Text("📎 [File Attached & Processed]", color="#00ff88", size=12, italic=True))
             message_elements.append(ft.Text(text, color="white", size=15))
         else:
@@ -447,7 +440,6 @@ def main(page: ft.Page):
         msg = chat_box.value
         chat_box.value = ""
         
-        # UI explicitly checks if the path exists to trigger the green paperclip icon
         add_message(msg if msg else "Please analyze this file/image.", is_user=True, has_attachment=(active_attachment_path is not None))
         
         saved_path = active_attachment_path
@@ -794,7 +786,6 @@ def main(page: ft.Page):
 # 5. APP LAUNCHER (RENDER-READY ENGINE)
 # ---------------------------------------------------------
 if __name__ == "__main__":
-    # Ensure absolute path creation at boot
     os.makedirs(EXPORTS_DIR, exist_ok=True)
     os.makedirs(NOTES_DIR, exist_ok=True)
     os.makedirs(UPLOADS_DIR, exist_ok=True)
@@ -803,12 +794,12 @@ if __name__ == "__main__":
     
     print(f"🌍 Starting EduNex Web Server on port {port}...")
     
-    # Absolute paths mapped to ensure the AI finds what the UI uploads
     ft.app(
         target=main, 
         view="web_browser", 
         port=port, 
         host="0.0.0.0", 
         assets_dir=ASSETS_DIR,
-        upload_dir=UPLOADS_DIR
+        upload_dir=UPLOADS_DIR,
+        secret_key="EduNex_Secure_Key_2026" # 🌟 FIXED: Allows Flet to generate public upload URLs!
     )
