@@ -225,6 +225,10 @@ def main(page: ft.Page):
     unified_dropdown = ft.Dropdown(label="Select from list", bgcolor="#2b2b2b", color="white", border_color="#444", border_radius=10, options=[ft.dropdown.Option(key) for key in CLOUD_DATA.keys()], width=300)
     mode_switch = ft.Switch(label="Exam Mode (Strict)", active_color="#ff4444", inactive_thumb_color="#00ff88", value=False)
 
+    # ---> THE MISSING VAULT VARIABLES RESTORED <---
+    vault_list = ft.ListView(expand=True, spacing=10)
+    vault_viewer = ft.Column(expand=True, scroll="always", visible=False)
+
     chat_box = ft.TextField(
         hint_text="Ask a question... (Press Enter to Send)", 
         hint_style=ft.TextStyle(color="#888888"),
@@ -672,7 +676,11 @@ def main(page: ft.Page):
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     controls=[
                         ft.Row(controls=[ft.ElevatedButton(content=ft.Text("☰", size=24, color="#00ff88"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.CircleBorder(), padding=5), on_click=go_settings), ft.Text("EduNex", size=20, weight="bold", color="#00ff88")]), 
-                        ft.Row(controls=[ft.ElevatedButton(content=ft.Text("📁 Vault", size=12, color="#00e5ff"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#00e5ff"), padding=10), on_click=load_vault_files), ft.ElevatedButton(content=ft.Text("📄 Export", size=12, color="#00ff88"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#00ff88"), padding=10), on_click=export_click), ft.ElevatedButton(content=ft.Text("Clear", size=12, color="#ff4444"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#ff4444"), padding=10), on_click=clear_chat_click)])
+                        ft.Row(controls=[
+                            ft.ElevatedButton(content=ft.Text("📁 Vault", size=12, color="#00e5ff"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#00e5ff"), padding=10), on_click=load_vault_files), 
+                            ft.ElevatedButton(content=ft.Text("📄 Export", size=12, color="#00ff88"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#00ff88"), padding=10), on_click=export_click), 
+                            ft.ElevatedButton(content=ft.Text("Clear", size=12, color="#ff4444"), style=ft.ButtonStyle(bgcolor="#111111", shape=ft.RoundedRectangleBorder(radius=8), side=ft.BorderSide(1, "#ff4444"), padding=10), on_click=clear_chat_click)
+                        ])
                     ]
                 )
             ),
