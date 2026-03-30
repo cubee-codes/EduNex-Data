@@ -160,7 +160,9 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
         style = "⚠️ EXAM MODE: Bullet points, keywords." if is_exam_mode else "🎓 TUTOR MODE: Analogies, deep explanation."
         user_text_string += f"\n\n{history_context}INSTRUCTION: {style}\n{image_instruction}\n{concise_rule}\nCRITICAL RULE: Prioritize the UPLOADED REFERENCE FILE if provided.\nUSER INPUT: {user_input}"
 
+    # 🌟 NEW VISION FOCUS: Force the AI to pay attention to the array image data
     if has_image:
+        user_text_string = "CRITICAL INSTRUCTION: The user has attached an image or file. YOU MUST ANALYZE IT DIRECTLY to answer the query.\n\n" + user_text_string
         user_message_content = [{"type": "text", "text": user_text_string}] + image_list
     else:
         user_message_content = user_text_string
@@ -175,7 +177,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
     }
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=(5.0, 25.0))
+        response = requests.post(url, headers=headers, json=payload, timeout=(10.0, 30.0))
         
         if response.status_code == 200:
             result = response.json()
@@ -225,7 +227,6 @@ def main(page: ft.Page):
     unified_dropdown = ft.Dropdown(label="Select from list", bgcolor="#2b2b2b", color="white", border_color="#444", border_radius=10, options=[ft.dropdown.Option(key) for key in CLOUD_DATA.keys()], width=300)
     mode_switch = ft.Switch(label="Exam Mode (Strict)", active_color="#ff4444", inactive_thumb_color="#00ff88", value=False)
 
-    # ---> THE MISSING VAULT VARIABLES RESTORED <---
     vault_list = ft.ListView(expand=True, spacing=10)
     vault_viewer = ft.Column(expand=True, scroll="always", visible=False)
 
@@ -270,13 +271,27 @@ def main(page: ft.Page):
             attachment_text.value = f"⏳ Uploading: {f.name}..."
             attachment_indicator.visible = True
             page.update()
-            upload_url = page.get_upload_url(f.name, 60)
-            file_picker.upload([ft.FilePickerUploadFile(f.name, upload_url=upload_url)])
+            
+            # 🌟 ULTIMATE NETWORK FIX: Strip Render's internal IP and force relative routing
+            raw_url = page.get_upload_url(f.name, 60)
+            parsed = urllib.parse.urlparse(raw_url)
+            safe_upload_url = f"{parsed.path}?{parsed.query}" # Creates /upload/.... instead of http://127.0.0.1/...
+            
+            file_picker.upload([ft.FilePickerUploadFile(f.name, upload_url=safe_upload_url)])
 
     def on_file_uploaded(e: ft.FilePickerUploadEvent):
         nonlocal active_attachment_path
+        
+        # 🌟 NEW ERROR CHECK: Actually catch it if the browser blocks the file
+        if e.error:
+            attachment_text.value = f"❌ Upload Failed: {e.error}"
+            attachment_text.color = "#ff4444"
+            page.update()
+            return
+            
         active_attachment_path = os.path.join(UPLOADS_DIR, e.file_name)
         attachment_text.value = f"✅ File Ready: {e.file_name}"
+        attachment_text.color = "#00ff88"
         page.update()
 
     file_picker = ft.FilePicker()
@@ -340,8 +355,7 @@ def main(page: ft.Page):
         message_elements = []
         if is_user:
             if has_attachment:
-                message_elements.append(ft.Text("📎 [File Sent]", color="#00ff88", size=12, italic=True))
-                show_feedback("📎 File processed & saved to memory!", color="#00e5ff")
+                message_elements.append(ft.Text("📎 [File Attached & Processed]", color="#00ff88", size=12, italic=True))
             message_elements.append(ft.Text(text, color="white", size=15))
         else:
             parts = re.split(r'\[IMG:(.*?)\]', text)
@@ -416,11 +430,12 @@ def main(page: ft.Page):
         msg = chat_box.value
         chat_box.value = ""
         
-        add_message(msg if msg else "Here is a file, analyze it for me.", is_user=True, has_attachment=(active_attachment_path is not None))
+        add_message(msg if msg else "Please analyze this file/image.", is_user=True, has_attachment=(active_attachment_path is not None))
         
         saved_path = active_attachment_path
         active_attachment_path = None
         attachment_indicator.visible = False
+        attachment_text.color = "#00ff88"
         page.update()
         
         execute_ai_task(msg, attached_file=saved_path)
@@ -444,9 +459,6 @@ def main(page: ft.Page):
         add_message("Prep me for Viva!", is_user=True)
         execute_ai_task("", attached_file=None, is_viva=True)
 
-    # --- PURE TEXT SAVING & DOWNLOADING ---
-
-    # 1. Saves to Vault locally
     def bookmark_click(e):
         if not user_state.get("last_ai_response"): 
             show_feedback("⚠️ Chat is empty! Nothing to bookmark.", color="#ff4444")
@@ -466,7 +478,6 @@ def main(page: ft.Page):
             traceback.print_exc()
             show_feedback("❌ Failed to save.", color="#ff4444")
 
-    # 2. Main Export: Forces Device Download 
     def export_click(e):
         if not user_state.get("last_ai_response"): 
             show_feedback("⚠️ Chat is empty! Nothing to export.", color="#ff4444")
@@ -511,7 +522,6 @@ def main(page: ft.Page):
             print(f"DEBUG: Download Error - {ex}")
             show_feedback("❌ Failed to download.", color="#ff4444")
 
-    # 3. Load Vault Files (.txt only)
     def load_vault_files(e):
         vault_list.controls.clear()
         vault_viewer.visible = False
@@ -532,7 +542,6 @@ def main(page: ft.Page):
         main_screen.visible, settings_screen.visible, vault_screen.visible = False, False, True
         page.update()
         
-    # 4. View Vault File + Vault Specific Downloader
     def open_vault_file(filepath):
         try:
             with open(filepath, "r", encoding="utf-8") as f: 
