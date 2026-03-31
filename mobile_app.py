@@ -785,12 +785,18 @@ def main(page: ft.Page):
 # ---------------------------------------------------------
 # 5. APP LAUNCHER (RENDER-READY ENGINE)
 # ---------------------------------------------------------
+# ---------------------------------------------------------
+# 5. APP LAUNCHER (RENDER-READY ENGINE)
+# ---------------------------------------------------------
 if __name__ == "__main__":
     os.makedirs(EXPORTS_DIR, exist_ok=True)
     os.makedirs(NOTES_DIR, exist_ok=True)
     os.makedirs(UPLOADS_DIR, exist_ok=True)
     
     port = int(os.getenv("PORT", 8550))
+    
+    # 🌟 VERSION 0.24.1 FIX: Secure the upload folder using the OS environment instead!
+    os.environ["FLET_SECRET_KEY"] = "EduNex_Secure_Key_2026"
     
     print(f"🌍 Starting EduNex Web Server on port {port}...")
     
@@ -800,6 +806,6 @@ if __name__ == "__main__":
         port=port, 
         host="0.0.0.0", 
         assets_dir=ASSETS_DIR,
-        upload_dir=UPLOADS_DIR,
-        secret_key="EduNex_Secure_Key_2026" # 🌟 FIXED: Allows Flet to generate public upload URLs!
+        upload_dir=UPLOADS_DIR
+        # Removed the secret_key parameter from here so Python doesn't crash!
     )
