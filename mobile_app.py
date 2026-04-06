@@ -161,12 +161,13 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
         user_text_string += f"\n\n{history_context}INSTRUCTION: {style}\n{image_instruction}\n{concise_rule}\nCRITICAL RULE: Prioritize the UPLOADED REFERENCE FILE if provided.\nUSER INPUT: {user_input}"
 
     # --- VERSION UPDATE: Strict Vision Guardrail ---
+    # --- VERSION UPDATE: Smarter Vision Guardrail ---
     if has_image:
         image_guardrail = (
-            "CRITICAL VISION RULE: An image has been attached. First, determine if it is educational, academic, or relevant to the user's query/syllabus. "
-            "If it is a non-educational image (e.g., a selfie, random scenery, meme, or unrelated photo), DO NOT hallucinate an answer or try to connect it to the syllabus. "
-            "Instead, reply EXACTLY with: '⚠️ This image does not appear to be related to academic studies. Please upload a relevant diagram, document, or syllabus material.' "
-            "If it IS educational, analyze it deeply and accurately to answer the query.\n\n"
+            "CRITICAL VISION RULE: Images are present in the chat context.\n"
+            "1. If the image is educational (diagrams, code, syllabus), use it to answer the query.\n"
+            "2. If the image is non-educational (selfies, memes, unrelated photos) AND the user specifically asks you to describe or analyze it, reply EXACTLY with: '⚠️ This image does not appear to be related to academic studies.'\n"
+            "3. If the user asks for a general task (like Quiz, Viva, or Cheat Sheet) and the image in memory is irrelevant, completely IGNORE the image and fulfill the text task normally.\n\n"
         )
         user_text_string = image_guardrail + user_text_string
         user_message_content = [{"type": "text", "text": user_text_string}] + image_list
