@@ -160,8 +160,15 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
         style = "⚠️ EXAM MODE: Bullet points, keywords." if is_exam_mode else "🎓 TUTOR MODE: Analogies, deep explanation."
         user_text_string += f"\n\n{history_context}INSTRUCTION: {style}\n{image_instruction}\n{concise_rule}\nCRITICAL RULE: Prioritize the UPLOADED REFERENCE FILE if provided.\nUSER INPUT: {user_input}"
 
+    # --- VERSION UPDATE: Strict Vision Guardrail ---
     if has_image:
-        user_text_string = "CRITICAL: The user has attached an image or file. YOU MUST ANALYZE IT DIRECTLY to answer their query.\n\n" + user_text_string
+        image_guardrail = (
+            "CRITICAL VISION RULE: An image has been attached. First, determine if it is educational, academic, or relevant to the user's query/syllabus. "
+            "If it is a non-educational image (e.g., a selfie, random scenery, meme, or unrelated photo), DO NOT hallucinate an answer or try to connect it to the syllabus. "
+            "Instead, reply EXACTLY with: '⚠️ This image does not appear to be related to academic studies. Please upload a relevant diagram, document, or syllabus material.' "
+            "If it IS educational, analyze it deeply and accurately to answer the query.\n\n"
+        )
+        user_text_string = image_guardrail + user_text_string
         user_message_content = [{"type": "text", "text": user_text_string}] + image_list
     else:
         user_message_content = user_text_string
@@ -201,6 +208,27 @@ def main(page: ft.Page):
     page.bgcolor = "transparent" 
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 0
+
+    # --- VERSION UPDATE: ZOOM MODAL SETUP ---
+    zoom_image = ft.Image(src="", fit=ft.ImageFit.CONTAIN, expand=True)
+    
+    def close_zoom(e):
+        zoom_dialog.open = False
+        page.update()
+
+    zoom_dialog = ft.AlertDialog(
+        content=ft.Container(content=zoom_image, width=800, height=600, padding=10),
+        bgcolor="#111111",
+        shape=ft.RoundedRectangleBorder(radius=10),
+        actions=[ft.ElevatedButton("Close", on_click=close_zoom, bgcolor="#333333", color="white")]
+    )
+    page.overlay.append(zoom_dialog)
+
+    def open_zoom(e):
+        zoom_image.src = e.control.data
+        zoom_dialog.open = True
+        page.update()
+    # ----------------------------------------
 
     user_state = {
         "chat_history": [],
@@ -380,7 +408,16 @@ def main(page: ft.Page):
                         base_img_url = CLOUD_DATA[curr_subj]["img_base_url"]
                         safe_filename = urllib.parse.quote(part)
                         final_img_url = f"{base_img_url}/{safe_filename}"
-                        message_elements.append(ft.Row(controls=[ft.Image(src=final_img_url, width=350, border_radius=10)], alignment=ft.MainAxisAlignment.CENTER))
+                        
+                        # --- VERSION UPDATE: Clickable Image for Zoom Modal ---
+                        img_container = ft.Container(
+                            content=ft.Image(src=final_img_url, width=350, border_radius=10),
+                            data=final_img_url, 
+                            on_click=open_zoom,
+                            tooltip="Click to expand diagram",
+                            cursor=ft.MouseCursor.CLICK
+                        )
+                        message_elements.append(ft.Row(controls=[img_container], alignment=ft.MainAxisAlignment.CENTER))
 
         bubble = ft.Container(content=ft.Column(controls=message_elements, spacing=10), bgcolor=bg_color, padding=15, border_radius=10, expand=True)
         chat_row = ft.Row(controls=[ft.Container(width=50), bubble] if is_user else [bubble, ft.Container(width=50)], vertical_alignment=ft.CrossAxisAlignment.START)
@@ -782,9 +819,6 @@ def main(page: ft.Page):
         )
     )
 
-# ---------------------------------------------------------
-# 5. APP LAUNCHER (RENDER-READY ENGINE)
-# ---------------------------------------------------------
 # ---------------------------------------------------------
 # 5. APP LAUNCHER (RENDER-READY ENGINE)
 # ---------------------------------------------------------
