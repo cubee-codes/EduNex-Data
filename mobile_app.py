@@ -160,8 +160,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
         style = "⚠️ EXAM MODE: Bullet points, keywords." if is_exam_mode else "🎓 TUTOR MODE: Analogies, deep explanation."
         user_text_string += f"\n\n{history_context}INSTRUCTION: {style}\n{image_instruction}\n{concise_rule}\nCRITICAL RULE: Prioritize the UPLOADED REFERENCE FILE if provided.\nUSER INPUT: {user_input}"
 
-    # --- VERSION UPDATE: Strict Vision Guardrail ---
-    # --- VERSION UPDATE: Smarter Vision Guardrail ---
+    # --- UPDATED: Smarter Vision Guardrail ---
     if has_image:
         image_guardrail = (
             "CRITICAL VISION RULE: Images are present in the chat context.\n"
@@ -210,7 +209,7 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 0
 
-    # --- VERSION UPDATE: ZOOM MODAL SETUP ---
+    # --- ZOOM MODAL SETUP ---
     zoom_image = ft.Image(src="", fit=ft.ImageFit.CONTAIN, expand=True)
     
     def close_zoom(e):
@@ -274,6 +273,7 @@ def main(page: ft.Page):
         style=ft.ButtonStyle(bgcolor="#00ff88", shape=ft.CircleBorder(), padding=15)
     )
 
+    # --- UPDATED: Attachment Control Logic ---
     attachment_text = ft.Text("", size=12, color="#00ff88", italic=True)
     active_attachment_path = None
 
@@ -286,20 +286,35 @@ def main(page: ft.Page):
         show_feedback("❌ Upload cancelled.", color="#ff4444")
         page.update()
 
+    def remove_attachment(e):
+        nonlocal active_attachment_path
+        active_attachment_path = None
+        user_state["session_files"] = []  # Wipes the AI's memory of the file
+        attachment_indicator.visible = False
+        show_feedback("🗑️ File cleared from AI memory.", color="#ff8800")
+        page.update()
+
     cancel_btn = ft.ElevatedButton(
         content=ft.Text("❌ Cancel", color="#ff4444", size=12, weight="bold"), 
         style=ft.ButtonStyle(bgcolor="#222222", shape=ft.RoundedRectangleBorder(radius=8), padding=5),
-        on_click=cancel_upload, 
-        tooltip="Cancel Upload"
+        on_click=cancel_upload, visible=False
     )
     
-    attachment_indicator = ft.Row([attachment_text, cancel_btn], alignment=ft.MainAxisAlignment.CENTER, visible=False)
+    remove_btn = ft.ElevatedButton(
+        content=ft.Text("🗑️ Clear File", color="#ff8800", size=12, weight="bold"), 
+        style=ft.ButtonStyle(bgcolor="#222222", shape=ft.RoundedRectangleBorder(radius=8), padding=5),
+        on_click=remove_attachment, visible=False
+    )
+    
+    attachment_indicator = ft.Row([attachment_text, cancel_btn, remove_btn], alignment=ft.MainAxisAlignment.CENTER, visible=False)
 
     def on_file_picked(e: ft.FilePickerResultEvent):
         if e.files:
             f = e.files[0]
             attachment_text.value = f"⏳ Uploading {f.name} to server..."
             attachment_text.color = "#ff8800"
+            cancel_btn.visible = True
+            remove_btn.visible = False
             attachment_indicator.visible = True
             
             chat_box.disabled = True 
@@ -324,10 +339,14 @@ def main(page: ft.Page):
         if e.error:
             attachment_text.value = f"❌ Upload Failed: {e.error}"
             attachment_text.color = "#ff4444"
+            cancel_btn.visible = False
         else:
             active_attachment_path = os.path.join(UPLOADS_DIR, e.file_name)
-            attachment_text.value = f"✅ File Ready: {e.file_name}"
+            attachment_text.value = f"✅ Attached: {e.file_name}"
             attachment_text.color = "#00ff88"
+            cancel_btn.visible = False
+            remove_btn.visible = True
+            user_state["session_files"] = [] # Clear previous files so AI focuses on the new one
             
         chat_box.disabled = False
         send_button.disabled = False
@@ -410,7 +429,7 @@ def main(page: ft.Page):
                         safe_filename = urllib.parse.quote(part)
                         final_img_url = f"{base_img_url}/{safe_filename}"
                         
-                        # --- VERSION UPDATE: Clickable Image for Zoom Modal ---
+                        # --- UPDATED: Clickable Image without 'cursor' property ---
                         img_container = ft.Container(
                             content=ft.Image(src=final_img_url, width=350, border_radius=10),
                             data=final_img_url, 
@@ -481,7 +500,12 @@ def main(page: ft.Page):
         
         saved_path = active_attachment_path
         active_attachment_path = None
-        attachment_indicator.visible = False
+        
+        # Keep it visible, but update the text to show it is now locked in AI memory
+        if saved_path:
+            attachment_text.value = f"📎 Image stored in AI Memory"
+            attachment_text.color = "#00e5ff"
+            
         page.update()
         
         execute_ai_task(msg, attached_file=saved_path)
