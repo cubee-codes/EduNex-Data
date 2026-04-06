@@ -414,8 +414,7 @@ def main(page: ft.Page):
                             content=ft.Image(src=final_img_url, width=350, border_radius=10),
                             data=final_img_url, 
                             on_click=open_zoom,
-                            tooltip="Click to expand diagram",
-                            cursor=ft.MouseCursor.CLICK
+                            tooltip="Click to expand diagram"
                         )
                         message_elements.append(ft.Row(controls=[img_container], alignment=ft.MainAxisAlignment.CENTER))
 
