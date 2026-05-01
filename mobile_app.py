@@ -23,7 +23,7 @@ UPLOADS_DIR = os.path.join(ASSETS_DIR, "uploads")
 # ---------------------------------------------------------
 load_dotenv() 
 
-API_KEY = "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"
+API_KEY = os.getenv("GITHUB_API_KEY")
 MODEL_NAME = "gpt-4o-mini" 
 
 CLOUD_DATA = {
