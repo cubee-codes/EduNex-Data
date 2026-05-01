@@ -177,7 +177,8 @@ def fetch_practice_question(cached_syllabus_chunks):
         resp = requests.post(url, headers=headers, json=payload, timeout=15.0)
         if resp.status_code == 200:
             raw_content = resp.json()['choices'][0]['message']['content']
-            clean_json = raw_content.replace('```json', '').replace('```', '').strip()
+            clean_json = raw_content.replace('
+```json', '').replace('```', '').strip()
             return json.loads(clean_json)
     except Exception as e:
         print("JSON Fetch Error:", e)
@@ -199,7 +200,7 @@ def main(page: ft.Page):
         expand=True, 
         gradient=ft.LinearGradient(
             begin=ft.Alignment(-1, -1), end=ft.Alignment(1, 1), 
-            colors=["#0A0612", "#130D26", "#0A0612"] # Sleek obsidian purple
+            colors=["#0A0612", "#130D26", "#0A0612"] 
         )
     )
 
@@ -207,7 +208,7 @@ def main(page: ft.Page):
         if page.theme_mode == ft.ThemeMode.DARK:
             page.theme_mode = ft.ThemeMode.LIGHT
             premium_background.gradient = None
-            premium_background.bgcolor = "#F4F6F9" # Crisp modern light grey
+            premium_background.bgcolor = "#F4F6F9" 
         else:
             page.theme_mode = ft.ThemeMode.DARK
             premium_background.bgcolor = None
@@ -509,7 +510,6 @@ def main(page: ft.Page):
                 else:
                     curr_subj = user_state["current_subject"]
                     if curr_subj and curr_subj in CLOUD_DATA:
-                        # --- REMOVED cursor=ft.MouseCursor.CLICK TO PREVENT CRASH ---
                         img_container = ft.Container(content=ft.Image(src=f"{CLOUD_DATA[curr_subj]['img_base_url']}/{urllib.parse.quote(part)}", width=350, border_radius=10), data=f"{CLOUD_DATA[curr_subj]['img_base_url']}/{urllib.parse.quote(part)}", on_click=lambda e: (setattr(zoom_image, 'src', e.control.data), setattr(zoom_dialog, 'open', True), page.update()))
                         message_elements.append(ft.Row([img_container], alignment=ft.MainAxisAlignment.CENTER))
 
@@ -576,6 +576,14 @@ def main(page: ft.Page):
     ], alignment=ft.MainAxisAlignment.CENTER)
 
     action_buttons_container = ft.Container(content=theory_buttons)
+    
+    # --- FIX: Extracted Unit buttons to toggle visibility dynamically ---
+    cheat_sheet_container = ft.Container(
+        height=60, padding=10, 
+        content=ft.Row(scroll="auto", controls=[
+            ft.OutlinedButton(f"Unit {i} Summary", data=f"Unit {i}", on_click=lambda e: action_click(e, "summary"), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=20))) for i in range(1, 6)
+        ])
+    )
 
     def apply_settings_click(e):
         selected_name = unified_dropdown.value
@@ -584,14 +592,17 @@ def main(page: ft.Page):
         user_state["current_subject"] = selected_name
         current_subject_text.value = f"Connected: {selected_name}"
         
+        # --- FIX: Kept chat enabled, disabled Unit buttons in online mode ---
         if CLOUD_DATA[selected_name].get("is_online", False):
             action_buttons_container.content = online_buttons
-            chat_box.disabled, send_button.disabled = True, True
-            chat_box.hint_text = "Chat is disabled in Online Exam Mode."
+            chat_box.disabled, send_button.disabled = False, False
+            chat_box.hint_text = "Message EduNex (Practice Mode)..."
+            cheat_sheet_container.visible = False
         else:
             action_buttons_container.content = theory_buttons
             chat_box.disabled, send_button.disabled = False, False
             chat_box.hint_text = "Message EduNex..."
+            cheat_sheet_container.visible = True
             
         go_home(None)
         
@@ -615,7 +626,7 @@ def main(page: ft.Page):
                 ft.Row([theme_btn, ft.TextButton("Clear Chat", on_click=lambda e: chat_history.controls.clear() or page.update())])
             ])),
             ft.Divider(height=1, color=ft.colors.OUTLINE_VARIANT),
-            ft.Container(height=60, padding=10, content=ft.Row(scroll="auto", controls=[ft.OutlinedButton(f"Unit {i} Summary", data=f"Unit {i}", on_click=lambda e: action_click(e, "summary"), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=20))) for i in range(1, 6)])),
+            cheat_sheet_container, # Inserted the dynamic container here
             ft.Container(content=status_row, height=20),
             ft.Container(content=chat_history, expand=True), 
             ft.Container(
@@ -629,7 +640,6 @@ def main(page: ft.Page):
         ]
     )
 
-    # --- PROFESSIONAL SETTINGS SCREEN ALIGNMENT (FIXED ERROR) ---
     settings_screen.content = ft.Column([
         ft.Container(padding=20, content=ft.Row([ft.IconButton(ft.icons.ARROW_BACK, on_click=go_home), ft.Text("Configuration", size=24, weight="bold")])),
         ft.Container(
