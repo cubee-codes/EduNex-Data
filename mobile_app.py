@@ -25,25 +25,27 @@ load_dotenv()
 
 API_KEY = os.getenv("GITHUB_API_KEY") 
 MODEL_NAME = "gpt-4o-mini" 
-AZURE_API_URL = "[https://models.inference.ai.azure.com/chat/completions](https://models.inference.ai.azure.com/chat/completions)"
+
+# Bulletproof URL to prevent copy-paste artifacts from crashing 'requests'
+AZURE_API_URL = "https://models.inference.ai.azure.com/chat/completions".strip("[]'\" \n\r")
 
 CLOUD_DATA = {
     "Operating Systems (Theory)": {
-        "txt_url": "[https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/OS/os.txt](https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/OS/os.txt)", 
-        "img_base_url": "[https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/OS/images](https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/OS/images)", 
-        "github_api_url": "[https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/OS/images](https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/OS/images)",
+        "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/OS/os.txt", 
+        "img_base_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/OS/images", 
+        "github_api_url": "https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/OS/images",
         "available_images": [],
         "is_online": False
     },
     "Software Testing (Theory)": {
-        "txt_url": "[https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt](https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt)", 
-        "img_base_url": "[https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/SFT/images](https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/SFT/images)", 
-        "github_api_url": "[https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/SFT/images](https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/SFT/images)",
+        "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt", 
+        "img_base_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/SFT/images", 
+        "github_api_url": "https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/SFT/images",
         "available_images": [],
         "is_online": False
     },
     "Advanced Java (Online Exam)": {
-        "txt_url": "[https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt](https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt)", 
+        "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt", 
         "img_base_url": "", 
         "github_api_url": "",
         "available_images": [],
@@ -153,7 +155,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
             result = response.json()
             if 'choices' in result and len(result['choices']) > 0: return result['choices'][0]['message']['content']
         return f"❌ API Error {response.status_code}"
-    except Exception as e: return f"❌ Error: {str(e)}"
+    except Exception as e: return f"Error: {str(e)}"
 
 def fetch_practice_question(cached_syllabus_chunks):
     syllabus_context = fast_search_syllabus("", cached_syllabus_chunks, top_k=6, randomize_if_empty=True)
@@ -176,7 +178,6 @@ def fetch_practice_question(cached_syllabus_chunks):
         resp = requests.post(AZURE_API_URL, headers=headers, json=payload, timeout=15.0)
         if resp.status_code == 200:
             raw_content = resp.json()['choices'][0]['message']['content']
-            # Safely strip markdown code blocks using regex to avoid syntax errors from rich-text pastes
             clean_json = re.sub(r'```(?:json)?', '', raw_content).strip()
             return json.loads(clean_json)
     except Exception as e:
@@ -189,7 +190,6 @@ def fetch_practice_question(cached_syllabus_chunks):
 def main(page: ft.Page):
     page.title = "EduNex Premium"
     
-    # --- PROFESSIONAL PURPLE THEME ---
     page.theme = ft.Theme(color_scheme_seed=ft.colors.DEEP_PURPLE)
     page.dark_theme = ft.Theme(color_scheme_seed=ft.colors.DEEP_PURPLE)
     page.theme_mode = ft.ThemeMode.DARK 
@@ -218,7 +218,6 @@ def main(page: ft.Page):
 
     theme_btn = ft.IconButton(icon=ft.icons.BRIGHTNESS_6, on_click=toggle_theme, tooltip="Toggle Light/Dark Mode")
 
-    # --- ZOOM MODAL ---
     zoom_image = ft.Image(src="", fit=ft.ImageFit.CONTAIN, expand=True)
     zoom_dialog = ft.AlertDialog(content=ft.Container(content=zoom_image, width=800, height=600, padding=10), shape=ft.RoundedRectangleBorder(radius=10), actions=[ft.TextButton("Close", on_click=lambda e: (setattr(zoom_dialog, 'open', False), page.update()))])
     page.overlay.append(zoom_dialog)
@@ -385,7 +384,6 @@ def main(page: ft.Page):
         threading.Thread(target=timer_thread, daemon=True).start()
         threading.Thread(target=load_exam_question, daemon=True).start()
 
-    # --- PROFESSIONAL EXAM CARDS ---
     left_exam_card = ft.Card(
         elevation=2, expand=2,
         content=ft.Container(
@@ -422,7 +420,6 @@ def main(page: ft.Page):
         exam_explanation_view
     ])
 
-    # --- FILE UPLOAD LOGIC ---
     attachment_text = ft.Text("", size=12, italic=True)
     active_attachment_path = None
 
@@ -563,7 +560,6 @@ def main(page: ft.Page):
         add_message(f"Requested: {mode.title()}", is_user=True)
         execute_ai_task(e.control.data if mode == "summary" else "", None, is_quiz=(mode=="quiz"), is_summary=(mode=="summary"), is_viva=(mode=="viva"))
 
-    # --- PROFESSIONAL MAIN CHAT ALIGNMENT ---
     theory_buttons = ft.Row([
         ft.OutlinedButton("🎯 Generate Quiz", on_click=lambda e: action_click(e, "quiz"), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))),
         ft.OutlinedButton("🗣️ Viva Prep", on_click=lambda e: action_click(e, "viva"), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))),
@@ -590,11 +586,12 @@ def main(page: ft.Page):
         user_state["current_subject"] = selected_name
         current_subject_text.value = f"Connected: {selected_name}"
         
+        # --- FIXED: Correctly setting visible = False for online mode ---
         if CLOUD_DATA[selected_name].get("is_online", False):
             action_buttons_container.content = online_buttons
             chat_box.disabled, send_button.disabled = False, False
             chat_box.hint_text = "Message EduNex (Practice Mode)..."
-            cheat_sheet_container.visible = True
+            cheat_sheet_container.visible = False
         else:
             action_buttons_container.content = theory_buttons
             chat_box.disabled, send_button.disabled = False, False
