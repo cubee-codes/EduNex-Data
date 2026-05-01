@@ -654,4 +654,4 @@ if __name__ == "__main__":
     os.environ["FLET_SECRET_KEY"] = "EduNex_Secure_Key_2026"
     port = int(os.getenv("PORT", 8550))
     print(f"🌍 Starting EduNex Enterprise on port {port}...")
-    ft.app(target=main, view="web_browser", port=port, host="0.0.0.0", assets_dir=ASSETS_DIR, upload_dir=UPLOADS_DIR)
+    ft.app(target=main, view="web_browser", port=port, host="0.0.0.0", assets_dir=ASSETS_DIR, upload_dir=UPLOADS_DIR)s
