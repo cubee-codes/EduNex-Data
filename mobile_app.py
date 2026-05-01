@@ -610,7 +610,7 @@ def main(page: ft.Page):
             ft.Container(content=chat_history, expand=True), 
             ft.Container(
                 padding=20, bgcolor=ft.colors.SURFACE, border=ft.border.only(top=ft.border.BorderSide(1, ft.colors.OUTLINE_VARIANT)),
-                content=ft.Column(spacing=10, controls=[
+                content=ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.CENTER, spacing=20, controls=[
                     action_buttons_container, 
                     attachment_indicator,
                     ft.Row([ft.IconButton(ft.icons.ATTACH_FILE, on_click=lambda e: file_picker.pick_files(allowed_extensions=["txt", "png", "jpg", "jpeg"])), chat_box, send_button])
