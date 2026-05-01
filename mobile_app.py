@@ -233,6 +233,9 @@ def main(page: ft.Page):
     chat_history = ft.ListView(expand=True, spacing=15, auto_scroll=True, padding=20)
     current_subject_text = ft.Text("No Subject Selected", size=12, italic=True, color=ft.colors.ON_SURFACE_VARIANT)
     
+    feedback_text = ft.Text("", size=13, weight="bold")
+    status_row = ft.Row(controls=[feedback_text], alignment=ft.MainAxisAlignment.CENTER)
+
     search_box = ft.TextField(label="Search subject...", border_radius=8, text_size=14, prefix_icon=ft.icons.SEARCH)
     search_container = ft.Container(content=search_box, width=350)
     unified_dropdown = ft.Dropdown(label="Select Subject", border_radius=8, options=[ft.dropdown.Option(key) for key in CLOUD_DATA.keys()], width=350)
@@ -243,6 +246,18 @@ def main(page: ft.Page):
 
     chat_box = ft.TextField(hint_text="Message EduNex...", border_radius=20, content_padding=15, expand=True, bgcolor=ft.colors.SURFACE, border_color=ft.colors.OUTLINE_VARIANT)
     send_button = ft.IconButton(icon=ft.icons.SEND_ROUNDED, icon_color=ft.colors.PRIMARY, icon_size=24, tooltip="Send")
+
+    def show_feedback(message, color=ft.colors.GREEN):
+        feedback_text.value = message
+        feedback_text.color = color
+        page.update()
+        def clear_text():
+            time.sleep(3.5)
+            if feedback_text.value == message: 
+                feedback_text.value = ""
+                try: page.update()
+                except: pass
+        threading.Thread(target=clear_text, daemon=True).start()
 
     # --- EXAM MODULE (PROFESSIONAL LAYOUT) ---
     exam_state = {"active": False, "current_q": 1, "total_q": 50, "answers": {}, "data": {}, "time_left": 3000} 
@@ -415,8 +430,7 @@ def main(page: ft.Page):
         nonlocal active_attachment_path
         active_attachment_path = None
         attachment_indicator.visible, chat_box.disabled, send_button.disabled = False, False, False
-        page.snack_bar = ft.SnackBar(ft.Text("Upload cancelled."), bgcolor=ft.colors.ERROR)
-        page.snack_bar.open = True
+        show_feedback("Upload cancelled.", ft.colors.ERROR)
         page.update()
 
     def remove_attachment(e):
@@ -424,8 +438,7 @@ def main(page: ft.Page):
         active_attachment_path = None
         user_state["session_files"] = [] 
         attachment_indicator.visible = False
-        page.snack_bar = ft.SnackBar(ft.Text("File cleared from AI memory."))
-        page.snack_bar.open = True
+        show_feedback("File cleared from AI memory.", ft.colors.ORANGE)
         page.update()
 
     cancel_btn = ft.TextButton("Cancel", on_click=cancel_upload, visible=False, style=ft.ButtonStyle(color=ft.colors.ERROR))
@@ -444,15 +457,15 @@ def main(page: ft.Page):
                 parsed = urllib.parse.urlparse(raw_url)
                 file_picker.upload([ft.FilePickerUploadFile(f.name, upload_url=f"{parsed.path}?{parsed.query}")])
             except Exception as ex:
-                page.snack_bar = ft.SnackBar(ft.Text(f"URL Error: {ex}"), bgcolor=ft.colors.ERROR)
-                page.snack_bar.open, chat_box.disabled, send_button.disabled = True, False, False
+                show_feedback(f"URL Error: {ex}", ft.colors.ERROR)
+                chat_box.disabled, send_button.disabled = False, False
                 page.update()
 
     def on_file_uploaded(e: ft.FilePickerUploadEvent):
         nonlocal active_attachment_path
         if e.error:
-            page.snack_bar = ft.SnackBar(ft.Text(f"Upload Failed: {e.error}"), bgcolor=ft.colors.ERROR)
-            page.snack_bar.open, cancel_btn.visible = True, False
+            show_feedback(f"Upload Failed: {e.error}", ft.colors.ERROR)
+            cancel_btn.visible = False
         else:
             active_attachment_path = os.path.join(UPLOADS_DIR, e.file_name)
             attachment_text.value = f"📎 Attached: {e.file_name}"
@@ -496,7 +509,8 @@ def main(page: ft.Page):
                 else:
                     curr_subj = user_state["current_subject"]
                     if curr_subj and curr_subj in CLOUD_DATA:
-                        img_container = ft.Container(content=ft.Image(src=f"{CLOUD_DATA[curr_subj]['img_base_url']}/{urllib.parse.quote(part)}", width=350, border_radius=10), data=f"{CLOUD_DATA[curr_subj]['img_base_url']}/{urllib.parse.quote(part)}", on_click=lambda e: (setattr(zoom_image, 'src', e.control.data), setattr(zoom_dialog, 'open', True), page.update()), cursor=ft.MouseCursor.CLICK)
+                        # --- REMOVED cursor=ft.MouseCursor.CLICK TO PREVENT CRASH ---
+                        img_container = ft.Container(content=ft.Image(src=f"{CLOUD_DATA[curr_subj]['img_base_url']}/{urllib.parse.quote(part)}", width=350, border_radius=10), data=f"{CLOUD_DATA[curr_subj]['img_base_url']}/{urllib.parse.quote(part)}", on_click=lambda e: (setattr(zoom_image, 'src', e.control.data), setattr(zoom_dialog, 'open', True), page.update()))
                         message_elements.append(ft.Row([img_container], alignment=ft.MainAxisAlignment.CENTER))
 
         bubble = ft.Container(content=ft.Column(message_elements, spacing=10), bgcolor=bg_color, padding=15, border_radius=12, expand=True)
@@ -517,8 +531,7 @@ def main(page: ft.Page):
                 add_message(str(resp), is_quiz=is_quiz, is_summary=is_summary, is_viva=is_viva)
             except Exception as e:
                 if loading_bubble in chat_history.controls: chat_history.controls.remove(loading_bubble)
-                page.snack_bar = ft.SnackBar(ft.Text(f"System Fault: {str(e)}"), bgcolor=ft.colors.ERROR)
-                page.snack_bar.open = True
+                show_feedback(f"System Fault: {str(e)}", ft.colors.ERROR)
             finally:
                 chat_box.disabled, send_button.disabled = False, False
                 page.update()
@@ -526,9 +539,7 @@ def main(page: ft.Page):
 
     def is_subject_loaded():
         if not user_state["current_subject"]: 
-            page.snack_bar = ft.SnackBar(ft.Text("Please select a subject from Configuration first!"), bgcolor=ft.colors.ERROR)
-            page.snack_bar.open = True
-            page.update()
+            show_feedback("Please select a subject from Configuration first!", ft.colors.ERROR)
             return False
         return True
 
@@ -557,7 +568,7 @@ def main(page: ft.Page):
     theory_buttons = ft.Row([
         ft.OutlinedButton("🎯 Generate Quiz", on_click=lambda e: action_click(e, "quiz"), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))),
         ft.OutlinedButton("🗣️ Viva Prep", on_click=lambda e: action_click(e, "viva"), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))),
-        ft.OutlinedButton("⭐ Bookmark Note", on_click=lambda e: (setattr(page, 'snack_bar', ft.SnackBar(ft.Text("Feature in development"))), setattr(page.snack_bar, 'open', True), page.update()), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)))
+        ft.OutlinedButton("⭐ Bookmark Note", on_click=lambda e: show_feedback("Feature in development", ft.colors.ORANGE), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)))
     ], wrap=True)
     
     online_buttons = ft.Row([
@@ -592,9 +603,7 @@ def main(page: ft.Page):
                         chunks = [resp_txt.text[i:i+1500] for i in range(0, len(resp_txt.text), 1500)]
                         user_state["cached_syllabus_chunks"] = chunks
                 except Exception: pass
-            page.snack_bar = ft.SnackBar(ft.Text("Subject connected successfully!"))
-            page.snack_bar.open = True
-            page.update()
+            show_feedback("Subject connected successfully!", ft.colors.GREEN)
 
         threading.Thread(target=fetch_cloud_data, daemon=True).start()
 
@@ -607,10 +616,11 @@ def main(page: ft.Page):
             ])),
             ft.Divider(height=1, color=ft.colors.OUTLINE_VARIANT),
             ft.Container(height=60, padding=10, content=ft.Row(scroll="auto", controls=[ft.OutlinedButton(f"Unit {i} Summary", data=f"Unit {i}", on_click=lambda e: action_click(e, "summary"), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=20))) for i in range(1, 6)])),
+            ft.Container(content=status_row, height=20),
             ft.Container(content=chat_history, expand=True), 
             ft.Container(
                 padding=20, bgcolor=ft.colors.SURFACE, border=ft.border.only(top=ft.border.BorderSide(1, ft.colors.OUTLINE_VARIANT)),
-                content=ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.CENTER, spacing=20, controls=[
+                content=ft.Column(spacing=10, controls=[
                     action_buttons_container, 
                     attachment_indicator,
                     ft.Row([ft.IconButton(ft.icons.ATTACH_FILE, on_click=lambda e: file_picker.pick_files(allowed_extensions=["txt", "png", "jpg", "jpeg"])), chat_box, send_button])
@@ -619,7 +629,7 @@ def main(page: ft.Page):
         ]
     )
 
-    # --- PROFESSIONAL SETTINGS SCREEN ALIGNMENT ---
+    # --- PROFESSIONAL SETTINGS SCREEN ALIGNMENT (FIXED ERROR) ---
     settings_screen.content = ft.Column([
         ft.Container(padding=20, content=ft.Row([ft.IconButton(ft.icons.ARROW_BACK, on_click=go_home), ft.Text("Configuration", size=24, weight="bold")])),
         ft.Container(
@@ -628,7 +638,7 @@ def main(page: ft.Page):
                 elevation=4,
                 content=ft.Container(
                     width=450, padding=40,
-                    content=ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER, main_alignment=ft.MainAxisAlignment.CENTER, spacing=20, controls=[
+                    content=ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER, alignment=ft.MainAxisAlignment.CENTER, spacing=20, controls=[
                         ft.Icon(ft.icons.SETTINGS_SUGGEST, size=50, color=ft.colors.PRIMARY),
                         ft.Text("Subject Setup", size=22, weight="bold"),
                         ft.Divider(),
