@@ -25,24 +25,25 @@ load_dotenv()
 
 API_KEY = os.getenv("GITHUB_API_KEY") 
 MODEL_NAME = "gpt-4o-mini" 
+AZURE_API_URL = "[https://models.inference.ai.azure.com/chat/completions](https://models.inference.ai.azure.com/chat/completions)"
 
 CLOUD_DATA = {
     "Operating Systems (Theory)": {
-        "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/OS/os.txt", 
-        "img_base_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/OS/images", 
-        "github_api_url": "https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/OS/images",
+        "txt_url": "[https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/OS/os.txt](https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/OS/os.txt)", 
+        "img_base_url": "[https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/OS/images](https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/OS/images)", 
+        "github_api_url": "[https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/OS/images](https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/OS/images)",
         "available_images": [],
         "is_online": False
     },
     "Software Testing (Theory)": {
-        "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt", 
-        "img_base_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/SFT/images", 
-        "github_api_url": "https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/SFT/images",
+        "txt_url": "[https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt](https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt)", 
+        "img_base_url": "[https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/SFT/images](https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/SFT/images)", 
+        "github_api_url": "[https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/SFT/images](https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/SFT/images)",
         "available_images": [],
         "is_online": False
     },
     "Advanced Java (Online Exam)": {
-        "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt", 
+        "txt_url": "[https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt](https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt)", 
         "img_base_url": "", 
         "github_api_url": "",
         "available_images": [],
@@ -79,7 +80,6 @@ def fast_search_syllabus(query, chunks, top_k=5, randomize_if_empty=False):
 def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, cached_syllabus_chunks, current_subject_key, is_quiz_mode=False, is_summary_mode=False, is_viva_mode=False, attached_file_path=None):
     if not API_KEY: return "❌ CRITICAL ERROR: GITHUB_API_KEY missing."
         
-    url = "https://models.inference.ai.azure.com/chat/completions"
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}"}
     
     if attached_file_path and os.path.exists(attached_file_path):
@@ -148,7 +148,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
     }
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=(10.0, 30.0))
+        response = requests.post(AZURE_API_URL, headers=headers, json=payload, timeout=(10.0, 30.0))
         if response.status_code == 200:
             result = response.json()
             if 'choices' in result and len(result['choices']) > 0: return result['choices'][0]['message']['content']
@@ -157,7 +157,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
 
 def fetch_practice_question(cached_syllabus_chunks):
     syllabus_context = fast_search_syllabus("", cached_syllabus_chunks, top_k=6, randomize_if_empty=True)
-    system_prompt = "You are a backend test generator. You ONLY output raw JSON. Do not add markdown blocks like ```json."
+    system_prompt = "You are a backend test generator. You ONLY output raw JSON. Do not add markdown blocks."
     user_prompt = f"""Based on this syllabus context, generate ONE unique, complex multiple-choice question. Do NOT reference diagrams.
     Context: {syllabus_context}
     
@@ -169,16 +169,15 @@ def fetch_practice_question(cached_syllabus_chunks):
         "explanation": "Brief explanation of why this is correct."
     }}"""
 
-    url = "[https://models.inference.ai.azure.com/chat/completions](https://models.inference.ai.azure.com/chat/completions)"
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}"}
     payload = {"model": MODEL_NAME, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}], "temperature": 0.8}
 
     try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=15.0)
+        resp = requests.post(AZURE_API_URL, headers=headers, json=payload, timeout=15.0)
         if resp.status_code == 200:
             raw_content = resp.json()['choices'][0]['message']['content']
-            clean_json = raw_content.replace('
-```json', '').replace('```', '').strip()
+            # Safely strip markdown code blocks using regex to avoid syntax errors from rich-text pastes
+            clean_json = re.sub(r'```(?:json)?', '', raw_content).strip()
             return json.loads(clean_json)
     except Exception as e:
         print("JSON Fetch Error:", e)
@@ -577,7 +576,6 @@ def main(page: ft.Page):
 
     action_buttons_container = ft.Container(content=theory_buttons)
     
-    # --- FIX: Extracted Unit buttons to toggle visibility dynamically ---
     cheat_sheet_container = ft.Container(
         height=60, padding=10, 
         content=ft.Row(scroll="auto", controls=[
@@ -592,12 +590,11 @@ def main(page: ft.Page):
         user_state["current_subject"] = selected_name
         current_subject_text.value = f"Connected: {selected_name}"
         
-        # --- FIX: Kept chat enabled, disabled Unit buttons in online mode ---
         if CLOUD_DATA[selected_name].get("is_online", False):
             action_buttons_container.content = online_buttons
             chat_box.disabled, send_button.disabled = False, False
             chat_box.hint_text = "Message EduNex (Practice Mode)..."
-            cheat_sheet_container.visible = False
+            cheat_sheet_container.visible = True
         else:
             action_buttons_container.content = theory_buttons
             chat_box.disabled, send_button.disabled = False, False
@@ -626,7 +623,7 @@ def main(page: ft.Page):
                 ft.Row([theme_btn, ft.TextButton("Clear Chat", on_click=lambda e: chat_history.controls.clear() or page.update())])
             ])),
             ft.Divider(height=1, color=ft.colors.OUTLINE_VARIANT),
-            cheat_sheet_container, # Inserted the dynamic container here
+            cheat_sheet_container,
             ft.Container(content=status_row, height=20),
             ft.Container(content=chat_history, expand=True), 
             ft.Container(
