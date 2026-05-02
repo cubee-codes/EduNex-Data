@@ -26,17 +26,10 @@ load_dotenv()
 API_KEY = os.getenv("GITHUB_API_KEY") 
 MODEL_NAME = "gpt-4o-mini" 
 
-# Bulletproof URL to prevent copy-paste artifacts from crashing 'requests'
+# Bulletproof URL to prevent copy-paste artifacts
 AZURE_API_URL = "https://models.inference.ai.azure.com/chat/completions".strip("[]'\" \n\r")
 
 CLOUD_DATA = {
-    "Emerging Trends in IT (Online Exam)": {
-        "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister6/ETI/eti.txt", 
-        "img_base_url": "", 
-        "github_api_url": "",
-        "available_images": [],
-        "is_online": True 
-    },
     "Operating Systems (Theory)": {
         "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/OS/os.txt", 
         "img_base_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/OS/images", 
@@ -50,6 +43,13 @@ CLOUD_DATA = {
         "github_api_url": "https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/SFT/images",
         "available_images": [],
         "is_online": False
+    },
+    "Emerging Trends in IT (Online Exam)": {
+        "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister6/ETI/eti.txt", 
+        "img_base_url": "", 
+        "github_api_url": "",
+        "available_images": [],
+        "is_online": True 
     }
 }
 
@@ -185,7 +185,7 @@ def fetch_practice_question(cached_syllabus_chunks):
         return None
 
 # ---------------------------------------------------------
-# 4. THE APP UI (PROFESSIONAL OVERHAUL)
+# 4. THE APP UI
 # ---------------------------------------------------------
 def main(page: ft.Page):
     page.title = "EduNex Premium"
@@ -226,7 +226,6 @@ def main(page: ft.Page):
     
     main_screen = ft.Container(expand=True, visible=True)
     settings_screen = ft.Container(expand=True, visible=False)
-    vault_screen = ft.Container(expand=True, visible=False, padding=20)
     exam_screen = ft.Container(expand=True, visible=False, padding=20) 
 
     chat_history = ft.ListView(expand=True, spacing=15, auto_scroll=True, padding=20)
@@ -239,9 +238,6 @@ def main(page: ft.Page):
     search_container = ft.Container(content=search_box, width=350)
     unified_dropdown = ft.Dropdown(label="Select Subject", border_radius=8, options=[ft.dropdown.Option(key) for key in CLOUD_DATA.keys()], width=350)
     mode_switch = ft.Switch(label="Exam Mode (Strict Constraints)", value=False)
-
-    vault_list = ft.ListView(expand=True, spacing=10)
-    vault_viewer = ft.Column(expand=True, scroll="always", visible=False)
 
     chat_box = ft.TextField(hint_text="Message EduNex...", border_radius=20, content_padding=15, expand=True, bgcolor=ft.colors.SURFACE, border_color=ft.colors.OUTLINE_VARIANT)
     send_button = ft.IconButton(icon=ft.icons.SEND_ROUNDED, icon_color=ft.colors.PRIMARY, icon_size=24, tooltip="Send")
@@ -258,7 +254,58 @@ def main(page: ft.Page):
                 except: pass
         threading.Thread(target=clear_text, daemon=True).start()
 
-    # --- EXAM MODULE (PROFESSIONAL LAYOUT) ---
+    # --- DOWNLOAD EXPORTERS ---
+    def download_chat_history(e):
+        if not user_state["chat_history"]:
+            show_feedback("Chat is empty!", ft.colors.ORANGE)
+            return
+            
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"EduNex_Chat_{timestamp}.txt"
+        filepath = os.path.join(EXPORTS_DIR, filename)
+        
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(f"=== EduNex Premium Chat Export ===\n")
+            f.write(f"Subject: {user_state['current_subject']}\n")
+            f.write(f"Date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
+            f.write("="*34 + "\n\n")
+            for msg in user_state["chat_history"]:
+                clean_msg = re.sub(r'\[IMG:(.*?)\]', '[Diagram/Image removed in text export]', msg)
+                f.write(clean_msg + "\n")
+                
+        page.launch_url(f"/exports/{filename}")
+        show_feedback("Chat downloaded!", ft.colors.GREEN)
+
+    def download_solved_mcqs(e):
+        if not exam_state["answers"]:
+            show_feedback("You haven't solved any questions yet!", ft.colors.ORANGE)
+            return
+
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"EduNex_MCQ_{timestamp}.txt"
+        filepath = os.path.join(EXPORTS_DIR, filename)
+        
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(f"=== EduNex Solved Practice Exam ===\n")
+            f.write(f"Subject: {user_state['current_subject']}\n")
+            f.write(f"Date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
+            f.write("="*35 + "\n\n")
+            
+            for q_num, ans_idx in exam_state["answers"].items():
+                data = exam_state["data"].get(q_num)
+                if data:
+                    correct_idx = data["answer_index"]
+                    f.write(f"Question {q_num}: {data['question']}\n")
+                    for i, opt in enumerate(data['options']):
+                        f.write(f"   {chr(65+i)}) {opt}\n")
+                    f.write(f"\nYour Answer:    {chr(65+ans_idx)}) {data['options'][ans_idx]}\n")
+                    f.write(f"Correct Answer: {chr(65+correct_idx)}) {data['options'][correct_idx]}\n")
+                    f.write(f"Explanation:    {data['explanation']}\n")
+                    f.write("-" * 50 + "\n\n")
+                    
+        page.launch_url(f"/exports/{filename}")
+
+    # --- EXAM MODULE ---
     exam_state = {"active": False, "current_q": 1, "total_q": 50, "answers": {}, "data": {}, "time_left": 3000} 
     
     exam_question_text = ft.Text("Loading question...", size=18, weight="w500")
@@ -362,7 +409,12 @@ def main(page: ft.Page):
                 )
             )
             
-        exam_explanation_view.controls.insert(1, ft.Text(f"Final Score: {score} / {exam_state['total_q']}", size=20, weight="bold"))
+        # Add Final Score & Download Button
+        exam_explanation_view.controls.insert(1, ft.Row([
+            ft.Text(f"Final Score: {score} / {exam_state['total_q']}", size=20, weight="bold"),
+            ft.ElevatedButton("📥 Download Solved Q&A", on_click=download_solved_mcqs, style=ft.ButtonStyle(bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY))
+        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN))
+        
         exam_explanation_view.visible = True
         page.update()
 
@@ -420,6 +472,7 @@ def main(page: ft.Page):
         exam_explanation_view
     ])
 
+    # --- FILE UPLOAD LOGIC ---
     attachment_text = ft.Text("", size=12, italic=True)
     active_attachment_path = None
 
@@ -475,12 +528,12 @@ def main(page: ft.Page):
     page.overlay.append(file_picker)
 
     def go_settings(e):
-        main_screen.visible, settings_screen.visible, vault_screen.visible, exam_screen.visible = False, True, False, False
+        main_screen.visible, settings_screen.visible, exam_screen.visible = False, True, False
         page.update()
 
     def go_home(e):
         exam_state["active"] = False 
-        main_screen.visible, settings_screen.visible, vault_screen.visible, exam_screen.visible = True, False, False, False
+        main_screen.visible, settings_screen.visible, exam_screen.visible = True, False, False
         page.update()
     
     def add_message(text, is_user=False, is_quiz=False, is_summary=False, is_viva=False, has_attachment=False):
@@ -562,8 +615,7 @@ def main(page: ft.Page):
 
     theory_buttons = ft.Row([
         ft.OutlinedButton("🎯 Generate Quiz", on_click=lambda e: action_click(e, "quiz"), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))),
-        ft.OutlinedButton("🗣️ Viva Prep", on_click=lambda e: action_click(e, "viva"), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))),
-        ft.OutlinedButton("⭐ Bookmark Note", on_click=lambda e: show_feedback("Feature in development", ft.colors.ORANGE), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)))
+        ft.OutlinedButton("🗣️ Viva Prep", on_click=lambda e: action_click(e, "viva"), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)))
     ], wrap=True)
     
     online_buttons = ft.Row([
@@ -586,7 +638,6 @@ def main(page: ft.Page):
         user_state["current_subject"] = selected_name
         current_subject_text.value = f"Connected: {selected_name}"
         
-        # --- FIXED: Correctly setting visible = False for online mode ---
         if CLOUD_DATA[selected_name].get("is_online", False):
             action_buttons_container.content = online_buttons
             chat_box.disabled, send_button.disabled = False, False
@@ -617,7 +668,7 @@ def main(page: ft.Page):
         controls=[
             ft.Container(padding=ft.padding.symmetric(horizontal=20, vertical=15), content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[
                 ft.Row([ft.IconButton(ft.icons.MENU, on_click=go_settings), ft.Text("EduNex", size=24, weight="w900", color=ft.colors.PRIMARY), current_subject_text]), 
-                ft.Row([theme_btn, ft.TextButton("Clear Chat", on_click=lambda e: chat_history.controls.clear() or page.update())])
+                ft.Row([theme_btn, ft.IconButton(ft.icons.DOWNLOAD_ROUNDED, tooltip="Download Chat", on_click=download_chat_history), ft.TextButton("Clear Chat", on_click=lambda e: chat_history.controls.clear() or page.update())])
             ])),
             ft.Divider(height=1, color=ft.colors.OUTLINE_VARIANT),
             cheat_sheet_container,
@@ -657,9 +708,7 @@ def main(page: ft.Page):
         )
     ])
 
-    vault_screen.content = ft.Column([ft.Row([ft.IconButton(ft.icons.ARROW_BACK, on_click=go_home), ft.Text("Vault", size=24)]), ft.Divider(), vault_list, vault_viewer])
-
-    page.add(ft.Stack(expand=True, controls=[premium_background, ft.Stack(expand=True, controls=[main_screen, settings_screen, vault_screen, exam_screen])]))
+    page.add(ft.Stack(expand=True, controls=[premium_background, ft.Stack(expand=True, controls=[main_screen, settings_screen, exam_screen])]))
 
 if __name__ == "__main__":
     os.makedirs(EXPORTS_DIR, exist_ok=True)
