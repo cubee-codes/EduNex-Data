@@ -50,13 +50,6 @@ CLOUD_DATA = {
         "github_api_url": "https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/SFT/images",
         "available_images": [],
         "is_online": False
-    },
-    "Advanced Java (Online Exam)": {
-        "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt", 
-        "img_base_url": "", 
-        "github_api_url": "",
-        "available_images": [],
-        "is_online": True 
     }
 }
 
