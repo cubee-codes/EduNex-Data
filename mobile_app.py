@@ -36,7 +36,7 @@ CLOUD_DATA = {
         "github_api_url": "",
         "available_images": [],
         "is_online": True 
-    }
+    },
     "Operating Systems (Theory)": {
         "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/OS/os.txt", 
         "img_base_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/OS/images", 
