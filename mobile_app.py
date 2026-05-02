@@ -30,6 +30,13 @@ MODEL_NAME = "gpt-4o-mini"
 AZURE_API_URL = "https://models.inference.ai.azure.com/chat/completions".strip("[]'\" \n\r")
 
 CLOUD_DATA = {
+    "Emerging Trends in IT (Online Exam)": {
+        "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister6/ETI/eti.txt", 
+        "img_base_url": "", 
+        "github_api_url": "",
+        "available_images": [],
+        "is_online": True 
+    }
     "Operating Systems (Theory)": {
         "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/OS/os.txt", 
         "img_base_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/OS/images", 
