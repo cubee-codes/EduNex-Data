@@ -322,7 +322,10 @@ def main(page: ft.Page):
     exam_state = {"active": False, "current_q": 1, "total_q": 50, "answers": {}, "data": {}, "time_left": 3000, "selected_option": None} 
     
     exam_question_text = ft.Text("Loading question...", size=18, weight="w500")
-    exam_options_column = ft.Column(spacing=10)
+    
+    # FIX: Applying width directly to the Column perfectly bounds the options and solves RenderFlex crashes!
+    exam_options_column = ft.Column(spacing=10, width=700) 
+    
     exam_timer_text = ft.Text("50:00", size=32, weight="bold", color=ft.colors.PRIMARY)
     
     exam_grid_controls = []
@@ -402,7 +405,6 @@ def main(page: ft.Page):
             exam_state["data"][exam_state["current_q"]] = safe_data
             exam_question_text.value = f"Q{exam_state['current_q']}. {safe_data['question']}"
             
-            # --- FIX: Removed cursor=ft.MouseCursor.CLICK to prevent version crash ---
             for idx, opt in enumerate(safe_data["options"]):
                 def make_click_handler(i):
                     def handle_click(e):
@@ -426,7 +428,7 @@ def main(page: ft.Page):
             page.update() 
             
         except Exception as e:
-            exam_question_text.value = f"System Parsing Error: {str(e)}. Please click Skip."
+            exam_question_text.value = f"System Error: Could not render options. Please click Skip."
             exam_options_column.controls.clear()
             page.update()
 
