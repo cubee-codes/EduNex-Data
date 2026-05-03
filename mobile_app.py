@@ -26,7 +26,7 @@ load_dotenv()
 API_KEY = os.getenv("GITHUB_API_KEY") 
 MODEL_NAME = "gpt-4o-mini" 
 
-# Bulletproof URL to prevent copy-paste artifacts
+# Bulletproof URL
 AZURE_API_URL = "https://models.inference.ai.azure.com/chat/completions".strip("[]'\" \n\r")
 
 CLOUD_DATA = {
@@ -195,11 +195,12 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.DARK 
     page.padding = 0
 
+    # --- NEW: GITHUB / VS CODE MIDNIGHT NAVY THEME ---
     premium_background = ft.Container(
         expand=True, 
         gradient=ft.LinearGradient(
             begin=ft.Alignment(-1, -1), end=ft.Alignment(1, 1), 
-            colors=["#0A0612", "#130D26", "#0A0612"] 
+            colors=["#0D1117", "#161B22", "#0D1117"] 
         )
     )
 
@@ -212,7 +213,7 @@ def main(page: ft.Page):
             page.theme_mode = ft.ThemeMode.DARK
             premium_background.bgcolor = None
             premium_background.gradient = ft.LinearGradient(
-                begin=ft.Alignment(-1, -1), end=ft.Alignment(1, 1), colors=["#0A0612", "#130D26", "#0A0612"]
+                begin=ft.Alignment(-1, -1), end=ft.Alignment(1, 1), colors=["#0D1117", "#161B22", "#0D1117"]
             )
         page.update()
 
@@ -292,6 +293,7 @@ def main(page: ft.Page):
             f.write("="*35 + "\n\n")
             
             for q_num, ans_idx in exam_state["answers"].items():
+                if ans_idx is None: continue # Skip ignored questions in download
                 data = exam_state["data"].get(q_num)
                 if data:
                     correct_idx = data["answer_index"]
@@ -305,7 +307,7 @@ def main(page: ft.Page):
                     
         page.launch_url(f"/exports/{filename}")
 
-    # --- EXAM MODULE ---
+    # --- INSTANT FEEDBACK EXAM MODULE ---
     exam_state = {"active": False, "current_q": 1, "total_q": 50, "answers": {}, "data": {}, "time_left": 3000} 
     
     exam_question_text = ft.Text("Loading question...", size=18, weight="w500")
@@ -319,6 +321,7 @@ def main(page: ft.Page):
     exam_grid = ft.Row(controls=exam_grid_controls, wrap=True, width=280, spacing=8, run_spacing=8)
 
     exam_explanation_view = ft.ListView(expand=True, visible=False, padding=20)
+    instant_feedback_view = ft.Column(visible=False, spacing=10)
 
     def format_time(seconds):
         mins, secs = divmod(seconds, 60)
@@ -338,6 +341,13 @@ def main(page: ft.Page):
     def load_exam_question():
         exam_question_text.value = f"Q{exam_state['current_q']}: Fetching securely from syllabus..."
         exam_options.content.controls.clear()
+        
+        # Reset UI for new question
+        exam_options.disabled = False
+        instant_feedback_view.visible = False
+        submit_btn.visible = True
+        skip_btn.visible = True
+        next_question_btn.visible = False
         page.update()
         
         q_data = fetch_practice_question(user_state["cached_syllabus_chunks"])
@@ -355,24 +365,70 @@ def main(page: ft.Page):
     def submit_exam_answer(e):
         if exam_options.value is None: return
         q_num = exam_state["current_q"]
-        exam_state["answers"][q_num] = int(exam_options.value)
+        user_ans = int(exam_options.value)
+        exam_state["answers"][q_num] = user_ans
+        
+        # Color Grid immediately
         exam_grid_controls[q_num - 1].bgcolor = ft.colors.PRIMARY 
         exam_grid_controls[q_num - 1].content.color = ft.colors.ON_PRIMARY
         exam_grid_controls[q_num - 1].border = None
         
-        if q_num < exam_state["total_q"]:
-            exam_state["current_q"] += 1
-            load_exam_question()
-        else: finish_exam(None)
+        # Process Instant Feedback
+        data = exam_state["data"][q_num]
+        correct_ans = data["answer_index"]
+        is_correct = (user_ans == correct_ans)
+        
+        status_color = ft.colors.GREEN if is_correct else ft.colors.ERROR
+        status_text = "✅ Correct!" if is_correct else "❌ Incorrect"
+        
+        instant_feedback_view.controls.clear()
+        instant_feedback_view.controls.append(ft.Divider(height=20, color=ft.colors.TRANSPARENT))
+        instant_feedback_view.controls.append(ft.Text(status_text, size=18, weight="bold", color=status_color))
+        
+        if not is_correct:
+            instant_feedback_view.controls.append(ft.Text(f"Correct Answer: {data['options'][correct_ans]}", weight="bold", color=ft.colors.GREEN))
+            
+        instant_feedback_view.controls.append(ft.Text(f"Explanation: {data['explanation']}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
+        
+        # Toggle UI
+        instant_feedback_view.visible = True
+        exam_options.disabled = True
+        submit_btn.visible = False
+        skip_btn.visible = False
+        next_question_btn.visible = True
+        page.update()
 
     def skip_exam_question(e):
         q_num = exam_state["current_q"]
+        exam_state["answers"][q_num] = None # Mark as skipped
+        
         exam_grid_controls[q_num - 1].bgcolor = ft.colors.SURFACE_VARIANT
         exam_grid_controls[q_num - 1].border = None
+        
+        # Show correct answer anyway for learning
+        data = exam_state["data"][q_num]
+        correct_ans = data["answer_index"]
+        
+        instant_feedback_view.controls.clear()
+        instant_feedback_view.controls.append(ft.Divider(height=20, color=ft.colors.TRANSPARENT))
+        instant_feedback_view.controls.append(ft.Text("⏭️ Skipped", size=18, weight="bold", color=ft.colors.ORANGE))
+        instant_feedback_view.controls.append(ft.Text(f"Correct Answer: {data['options'][correct_ans]}", weight="bold", color=ft.colors.GREEN))
+        instant_feedback_view.controls.append(ft.Text(f"Explanation: {data['explanation']}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
+        
+        instant_feedback_view.visible = True
+        exam_options.disabled = True
+        submit_btn.visible = False
+        skip_btn.visible = False
+        next_question_btn.visible = True
+        page.update()
+        
+    def next_exam_question(e):
+        q_num = exam_state["current_q"]
         if q_num < exam_state["total_q"]:
             exam_state["current_q"] += 1
             load_exam_question()
-        else: finish_exam(None)
+        else: 
+            finish_exam(None)
 
     def finish_exam(e):
         exam_state["active"] = False
@@ -409,7 +465,6 @@ def main(page: ft.Page):
                 )
             )
             
-        # Add Final Score & Download Button
         exam_explanation_view.controls.insert(1, ft.Row([
             ft.Text(f"Final Score: {score} / {exam_state['total_q']}", size=20, weight="bold"),
             ft.ElevatedButton("📥 Download Solved Q&A", on_click=download_solved_mcqs, style=ft.ButtonStyle(bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY))
@@ -436,17 +491,21 @@ def main(page: ft.Page):
         threading.Thread(target=timer_thread, daemon=True).start()
         threading.Thread(target=load_exam_question, daemon=True).start()
 
+    submit_btn = ft.ElevatedButton("Submit Answer", on_click=submit_exam_answer, style=ft.ButtonStyle(bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY, shape=ft.RoundedRectangleBorder(radius=8)))
+    skip_btn = ft.OutlinedButton("Skip Question", on_click=skip_exam_question, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)))
+    next_question_btn = ft.ElevatedButton("Next Question ➡", on_click=next_exam_question, visible=False, style=ft.ButtonStyle(bgcolor=ft.colors.GREEN_600, color=ft.colors.WHITE, shape=ft.RoundedRectangleBorder(radius=8)))
+    end_test_btn = ft.TextButton("End Test Early", on_click=finish_exam, style=ft.ButtonStyle(color=ft.colors.ERROR))
+
     left_exam_card = ft.Card(
         elevation=2, expand=2,
         content=ft.Container(
             padding=30,
             content=ft.Column([
-                exam_question_text, ft.Divider(height=20, color=ft.colors.TRANSPARENT), exam_options, ft.Divider(height=20, color=ft.colors.TRANSPARENT),
+                exam_question_text, ft.Divider(height=20, color=ft.colors.TRANSPARENT), exam_options,
+                instant_feedback_view,
+                ft.Divider(height=20, color=ft.colors.TRANSPARENT),
                 ft.Row([
-                    ft.ElevatedButton("Submit Answer", on_click=submit_exam_answer, style=ft.ButtonStyle(bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY, shape=ft.RoundedRectangleBorder(radius=8))),
-                    ft.OutlinedButton("Skip Question", on_click=skip_exam_question, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))),
-                    ft.Container(expand=True),
-                    ft.TextButton("End Test Early", on_click=finish_exam, style=ft.ButtonStyle(color=ft.colors.ERROR))
+                    submit_btn, skip_btn, next_question_btn, ft.Container(expand=True), end_test_btn
                 ])
             ])
         )
