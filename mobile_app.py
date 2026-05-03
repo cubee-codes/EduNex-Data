@@ -309,7 +309,6 @@ def main(page: ft.Page):
     exam_state = {"active": False, "current_q": 1, "total_q": 50, "answers": {}, "data": {}, "time_left": 3000, "selected_option": None} 
     
     exam_question_text = ft.Text("Loading question...", size=18, weight="w500")
-    # FIX: Replaced RadioGroup with a simple Column
     exam_options_column = ft.Column(spacing=10)
     exam_timer_text = ft.Text("50:00", size=32, weight="bold", color=ft.colors.PRIMARY)
     
@@ -338,7 +337,6 @@ def main(page: ft.Page):
             finish_exam(None)
 
     def update_option_ui():
-        # Update the visual state of the custom radio buttons
         for i, opt_container in enumerate(exam_options_column.controls):
             icon = opt_container.content.controls[0]
             if exam_state["selected_option"] == i:
@@ -370,7 +368,6 @@ def main(page: ft.Page):
         exam_state["data"][exam_state["current_q"]] = q_data
         exam_question_text.value = f"Q{exam_state['current_q']}. {q_data['question']}"
         
-        # FIX: Build robust, clickable rows that wrap text properly
         for idx, opt in enumerate(q_data["options"]):
             def make_click_handler(i):
                 def handle_click(e):
@@ -392,7 +389,7 @@ def main(page: ft.Page):
             )
             exam_options_column.controls.append(opt_row)
             
-        page.update()
+        page.update() 
 
     def submit_exam_answer(e):
         if exam_state["selected_option"] is None: 
@@ -419,7 +416,8 @@ def main(page: ft.Page):
         instant_feedback_view.controls.append(ft.Text(status_text, size=18, weight="bold", color=status_color))
         
         if not is_correct:
-            instant_feedback_view.controls.append(ft.Text(f"Correct Answer: {data['options'][correct_ans]}", weight="bold", color=ft.colors.GREEN))
+            if 0 <= correct_ans < len(data['options']):
+                instant_feedback_view.controls.append(ft.Text(f"Correct Answer: {data['options'][correct_ans]}", weight="bold", color=ft.colors.GREEN))
             
         instant_feedback_view.controls.append(ft.Text(f"Explanation: {data['explanation']}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
         
@@ -429,7 +427,7 @@ def main(page: ft.Page):
         skip_btn.visible = False
         next_question_btn.visible = True
         
-        # Visually highlight correct vs incorrect
+        # Safely visually highlight correct vs incorrect
         for i, opt_container in enumerate(exam_options_column.controls):
             if i == correct_ans:
                 opt_container.border = ft.border.all(2, ft.colors.GREEN)
@@ -451,7 +449,8 @@ def main(page: ft.Page):
         instant_feedback_view.controls.clear()
         instant_feedback_view.controls.append(ft.Divider(height=20, color=ft.colors.TRANSPARENT))
         instant_feedback_view.controls.append(ft.Text("⏭️ Skipped", size=18, weight="bold", color=ft.colors.ORANGE))
-        instant_feedback_view.controls.append(ft.Text(f"Correct Answer: {data['options'][correct_ans]}", weight="bold", color=ft.colors.GREEN))
+        if 0 <= correct_ans < len(data['options']):
+            instant_feedback_view.controls.append(ft.Text(f"Correct Answer: {data['options'][correct_ans]}", weight="bold", color=ft.colors.GREEN))
         instant_feedback_view.controls.append(ft.Text(f"Explanation: {data['explanation']}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
         
         instant_feedback_view.visible = True
@@ -460,8 +459,9 @@ def main(page: ft.Page):
         skip_btn.visible = False
         next_question_btn.visible = True
         
-        # Highlight correct answer
-        exam_options_column.controls[correct_ans].border = ft.border.all(2, ft.colors.GREEN)
+        if 0 <= correct_ans < len(exam_options_column.controls):
+            exam_options_column.controls[correct_ans].border = ft.border.all(2, ft.colors.GREEN)
+            
         page.update()
         
     def next_exam_question(e):
@@ -491,6 +491,9 @@ def main(page: ft.Page):
             status_color = ft.colors.GREEN if is_correct else ft.colors.ERROR
             status_text = "Correct" if is_correct else ("Skipped" if user_ans is None else "Incorrect")
             
+            # Safely handle out-of-bounds correct_ans from AI
+            correct_text = data['options'][correct_ans] if 0 <= correct_ans < len(data['options']) else "Unknown"
+            
             exam_explanation_view.controls.append(
                 ft.Card(
                     elevation=1,
@@ -499,7 +502,7 @@ def main(page: ft.Page):
                         content=ft.Column([
                             ft.Row([ft.Text(f"Question {i}", weight="bold", color=ft.colors.PRIMARY), ft.Text(status_text, color=status_color, weight="bold")]),
                             ft.Text(data['question'], size=15),
-                            ft.Text(f"Correct Answer: {data['options'][correct_ans]}", italic=True, color=ft.colors.ON_SURFACE_VARIANT),
+                            ft.Text(f"Correct Answer: {correct_text}", italic=True, color=ft.colors.ON_SURFACE_VARIANT),
                             ft.Divider(height=10, color=ft.colors.TRANSPARENT),
                             ft.Text(f"Explanation: {data['explanation']}", color=ft.colors.ON_SURFACE_VARIANT)
                         ])
@@ -544,7 +547,7 @@ def main(page: ft.Page):
             padding=30,
             content=ft.Column([
                 exam_question_text, ft.Divider(height=20, color=ft.colors.TRANSPARENT), 
-                exam_options_column, # Replaced RadioGroup with custom Column
+                exam_options_column, 
                 instant_feedback_view,
                 ft.Divider(height=20, color=ft.colors.TRANSPARENT),
                 ft.Row([
