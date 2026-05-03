@@ -156,6 +156,16 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
         return f"❌ API Error {response.status_code}"
     except Exception as e: return f"Error: {str(e)}"
 
+def extract_safe_json(raw_content):
+    try:
+        start = raw_content.find('{')
+        end = raw_content.rfind('}') + 1
+        if start != -1 and end != 0:
+            return json.loads(raw_content[start:end])
+        return None
+    except:
+        return None
+
 def fetch_practice_question(cached_syllabus_chunks):
     syllabus_context = fast_search_syllabus("", cached_syllabus_chunks, top_k=6, randomize_if_empty=True)
     system_prompt = "You are a backend test generator. You ONLY output raw JSON. Do not add markdown blocks."
@@ -177,11 +187,10 @@ def fetch_practice_question(cached_syllabus_chunks):
         resp = requests.post(AZURE_API_URL, headers=headers, json=payload, timeout=15.0)
         if resp.status_code == 200:
             raw_content = resp.json()['choices'][0]['message']['content']
-            clean_json = re.sub(r'```(?:json)?', '', raw_content).strip()
-            return json.loads(clean_json)
+            return extract_safe_json(raw_content)
     except Exception as e:
         print("JSON Fetch Error:", e)
-        return None
+    return None
 
 # ---------------------------------------------------------
 # 4. THE APP UI
@@ -294,13 +303,17 @@ def main(page: ft.Page):
                 if ans_idx is None: continue 
                 data = exam_state["data"].get(q_num)
                 if data:
-                    correct_idx = data["answer_index"]
+                    correct_idx = data.get("answer_index", 0)
                     f.write(f"Question {q_num}: {data['question']}\n")
                     for i, opt in enumerate(data['options']):
                         f.write(f"   {chr(65+i)}) {opt}\n")
-                    f.write(f"\nYour Answer:    {chr(65+ans_idx)}) {data['options'][ans_idx]}\n")
-                    f.write(f"Correct Answer: {chr(65+correct_idx)}) {data['options'][correct_idx]}\n")
-                    f.write(f"Explanation:    {data['explanation']}\n")
+                    
+                    if 0 <= ans_idx < len(data['options']):
+                        f.write(f"\nYour Answer:    {chr(65+ans_idx)}) {data['options'][ans_idx]}\n")
+                    if 0 <= correct_idx < len(data['options']):
+                        f.write(f"Correct Answer: {chr(65+correct_idx)}) {data['options'][correct_idx]}\n")
+                        
+                    f.write(f"Explanation:    {data.get('explanation', '')}\n")
                     f.write("-" * 50 + "\n\n")
                     
         page.launch_url(f"/exports/{filename}")
@@ -350,46 +363,77 @@ def main(page: ft.Page):
         page.update()
 
     def load_exam_question():
-        exam_question_text.value = f"Q{exam_state['current_q']}: Fetching securely from syllabus..."
-        exam_options_column.controls.clear()
-        exam_state["selected_option"] = None
-        exam_options_column.disabled = False
-        
-        instant_feedback_view.visible = False
-        submit_btn.visible = True
-        skip_btn.visible = True
-        next_question_btn.visible = False
-        page.update()
-        
-        q_data = fetch_practice_question(user_state["cached_syllabus_chunks"])
-        if not q_data:
-            q_data = {"question": "Network Error fetching question. Please Skip.", "options": ["Error", "Error", "Error", "Error"], "answer_index": 0, "explanation": "Failed to load due to API timeout."}
-        
-        exam_state["data"][exam_state["current_q"]] = q_data
-        exam_question_text.value = f"Q{exam_state['current_q']}. {q_data['question']}"
-        
-        for idx, opt in enumerate(q_data["options"]):
-            def make_click_handler(i):
-                def handle_click(e):
-                    if not exam_options_column.disabled:
-                        exam_state["selected_option"] = i
-                        update_option_ui()
-                return handle_click
-
-            opt_row = ft.Container(
-                content=ft.Row([
-                    ft.Icon(ft.icons.RADIO_BUTTON_UNCHECKED, color=ft.colors.ON_SURFACE_VARIANT, size=20),
-                    ft.Text(opt, expand=True, size=15)
-                ], vertical_alignment=ft.CrossAxisAlignment.START),
-                on_click=make_click_handler(idx),
-                border_radius=8,
-                padding=10,
-                cursor=ft.MouseCursor.CLICK,
-                bgcolor=ft.colors.TRANSPARENT
-            )
-            exam_options_column.controls.append(opt_row)
+        try:
+            exam_question_text.value = f"Q{exam_state['current_q']}: Fetching securely from syllabus..."
+            exam_options_column.controls.clear()
+            exam_state["selected_option"] = None
+            exam_options_column.disabled = False
             
-        page.update() 
+            instant_feedback_view.visible = False
+            submit_btn.visible = True
+            skip_btn.visible = True
+            next_question_btn.visible = False
+            page.update()
+            
+            # Fetch the question block
+            q_data = fetch_practice_question(user_state["cached_syllabus_chunks"])
+            
+            # Bulletproof extraction to prevent silent thread crashes
+            if not q_data or not isinstance(q_data, dict):
+                q_data = {}
+                
+            q_text = q_data.get("question") or q_data.get("Question") or q_data.get("QUESTION") or "Network error fetching question. Please click Skip."
+            
+            raw_options = q_data.get("options") or q_data.get("Options") or q_data.get("choices") or q_data.get("Choices") or []
+            if not isinstance(raw_options, list) or len(raw_options) == 0:
+                raw_options = ["Error loading option A", "Error loading option B", "Error loading option C", "Error loading option D"]
+                
+            raw_ans = q_data.get("answer_index") or q_data.get("Answer_Index") or q_data.get("answer") or 0
+            if isinstance(raw_ans, str) and raw_ans.isdigit(): raw_ans = int(raw_ans)
+            if not isinstance(raw_ans, int): raw_ans = 0
+            
+            explanation = q_data.get("explanation") or q_data.get("Explanation") or "No explanation provided by AI."
+            
+            # Save the clean safe data back to memory
+            safe_data = {
+                "question": q_text,
+                "options": raw_options,
+                "answer_index": raw_ans,
+                "explanation": explanation
+            }
+            
+            exam_state["data"][exam_state["current_q"]] = safe_data
+            exam_question_text.value = f"Q{exam_state['current_q']}. {safe_data['question']}"
+            
+            # Build buttons safely
+            for idx, opt in enumerate(safe_data["options"]):
+                def make_click_handler(i):
+                    def handle_click(e):
+                        if not exam_options_column.disabled:
+                            exam_state["selected_option"] = i
+                            update_option_ui()
+                    return handle_click
+
+                opt_row = ft.Container(
+                    content=ft.Row([
+                        ft.Icon(ft.icons.RADIO_BUTTON_UNCHECKED, color=ft.colors.ON_SURFACE_VARIANT, size=20),
+                        ft.Text(str(opt), expand=True, size=15)
+                    ], vertical_alignment=ft.CrossAxisAlignment.START),
+                    on_click=make_click_handler(idx),
+                    border_radius=8,
+                    padding=10,
+                    cursor=ft.MouseCursor.CLICK,
+                    bgcolor=ft.colors.TRANSPARENT
+                )
+                exam_options_column.controls.append(opt_row)
+                
+            page.update() 
+            
+        except Exception as e:
+            # Absolute worst case scenario, show the error instead of crashing
+            exam_question_text.value = f"System Parsing Error: {str(e)}. Please click Skip."
+            exam_options_column.controls.clear()
+            page.update()
 
     def submit_exam_answer(e):
         if exam_state["selected_option"] is None: 
@@ -404,8 +448,8 @@ def main(page: ft.Page):
         exam_grid_controls[q_num - 1].content.color = ft.colors.ON_PRIMARY
         exam_grid_controls[q_num - 1].border = None
         
-        data = exam_state["data"][q_num]
-        correct_ans = data["answer_index"]
+        data = exam_state["data"].get(q_num, {})
+        correct_ans = data.get("answer_index", 0)
         is_correct = (user_ans == correct_ans)
         
         status_color = ft.colors.GREEN if is_correct else ft.colors.ERROR
@@ -416,10 +460,10 @@ def main(page: ft.Page):
         instant_feedback_view.controls.append(ft.Text(status_text, size=18, weight="bold", color=status_color))
         
         if not is_correct:
-            if 0 <= correct_ans < len(data['options']):
+            if 0 <= correct_ans < len(data.get('options', [])):
                 instant_feedback_view.controls.append(ft.Text(f"Correct Answer: {data['options'][correct_ans]}", weight="bold", color=ft.colors.GREEN))
             
-        instant_feedback_view.controls.append(ft.Text(f"Explanation: {data['explanation']}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
+        instant_feedback_view.controls.append(ft.Text(f"Explanation: {data.get('explanation', '')}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
         
         instant_feedback_view.visible = True
         exam_options_column.disabled = True
@@ -427,7 +471,6 @@ def main(page: ft.Page):
         skip_btn.visible = False
         next_question_btn.visible = True
         
-        # Safely visually highlight correct vs incorrect
         for i, opt_container in enumerate(exam_options_column.controls):
             if i == correct_ans:
                 opt_container.border = ft.border.all(2, ft.colors.GREEN)
@@ -443,15 +486,17 @@ def main(page: ft.Page):
         exam_grid_controls[q_num - 1].bgcolor = ft.colors.SURFACE_VARIANT
         exam_grid_controls[q_num - 1].border = None
         
-        data = exam_state["data"][q_num]
-        correct_ans = data["answer_index"]
+        data = exam_state["data"].get(q_num, {})
+        correct_ans = data.get("answer_index", 0)
         
         instant_feedback_view.controls.clear()
         instant_feedback_view.controls.append(ft.Divider(height=20, color=ft.colors.TRANSPARENT))
         instant_feedback_view.controls.append(ft.Text("⏭️ Skipped", size=18, weight="bold", color=ft.colors.ORANGE))
-        if 0 <= correct_ans < len(data['options']):
+        
+        if 0 <= correct_ans < len(data.get('options', [])):
             instant_feedback_view.controls.append(ft.Text(f"Correct Answer: {data['options'][correct_ans]}", weight="bold", color=ft.colors.GREEN))
-        instant_feedback_view.controls.append(ft.Text(f"Explanation: {data['explanation']}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
+            
+        instant_feedback_view.controls.append(ft.Text(f"Explanation: {data.get('explanation', '')}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
         
         instant_feedback_view.visible = True
         exam_options_column.disabled = True
@@ -484,15 +529,14 @@ def main(page: ft.Page):
             if i not in exam_state["data"]: continue
             data = exam_state["data"][i]
             user_ans = exam_state["answers"].get(i)
-            correct_ans = data["answer_index"]
+            correct_ans = data.get("answer_index", 0)
             is_correct = (user_ans == correct_ans)
             if is_correct: score += 1
             
             status_color = ft.colors.GREEN if is_correct else ft.colors.ERROR
             status_text = "Correct" if is_correct else ("Skipped" if user_ans is None else "Incorrect")
             
-            # Safely handle out-of-bounds correct_ans from AI
-            correct_text = data['options'][correct_ans] if 0 <= correct_ans < len(data['options']) else "Unknown"
+            correct_text = data['options'][correct_ans] if 0 <= correct_ans < len(data.get('options', [])) else "Unknown"
             
             exam_explanation_view.controls.append(
                 ft.Card(
@@ -501,10 +545,10 @@ def main(page: ft.Page):
                         padding=20,
                         content=ft.Column([
                             ft.Row([ft.Text(f"Question {i}", weight="bold", color=ft.colors.PRIMARY), ft.Text(status_text, color=status_color, weight="bold")]),
-                            ft.Text(data['question'], size=15),
+                            ft.Text(data.get('question', ''), size=15),
                             ft.Text(f"Correct Answer: {correct_text}", italic=True, color=ft.colors.ON_SURFACE_VARIANT),
                             ft.Divider(height=10, color=ft.colors.TRANSPARENT),
-                            ft.Text(f"Explanation: {data['explanation']}", color=ft.colors.ON_SURFACE_VARIANT)
+                            ft.Text(f"Explanation: {data.get('explanation', '')}", color=ft.colors.ON_SURFACE_VARIANT)
                         ])
                     )
                 )
