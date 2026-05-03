@@ -26,7 +26,6 @@ load_dotenv()
 API_KEY = os.getenv("GITHUB_API_KEY") 
 MODEL_NAME = "gpt-4o-mini" 
 
-# Bulletproof URL
 AZURE_API_URL = "https://models.inference.ai.azure.com/chat/completions".strip("[]'\" \n\r")
 
 CLOUD_DATA = {
@@ -195,7 +194,6 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.DARK 
     page.padding = 0
 
-    # --- NEW: GITHUB / VS CODE MIDNIGHT NAVY THEME ---
     premium_background = ft.Container(
         expand=True, 
         gradient=ft.LinearGradient(
@@ -293,7 +291,7 @@ def main(page: ft.Page):
             f.write("="*35 + "\n\n")
             
             for q_num, ans_idx in exam_state["answers"].items():
-                if ans_idx is None: continue # Skip ignored questions in download
+                if ans_idx is None: continue # Skip ignored questions
                 data = exam_state["data"].get(q_num)
                 if data:
                     correct_idx = data["answer_index"]
@@ -342,7 +340,6 @@ def main(page: ft.Page):
         exam_question_text.value = f"Q{exam_state['current_q']}: Fetching securely from syllabus..."
         exam_options.content.controls.clear()
         
-        # Reset UI for new question
         exam_options.disabled = False
         instant_feedback_view.visible = False
         submit_btn.visible = True
@@ -358,7 +355,27 @@ def main(page: ft.Page):
         exam_question_text.value = f"Q{exam_state['current_q']}. {q_data['question']}"
         
         for idx, opt in enumerate(q_data["options"]):
-            exam_options.content.controls.append(ft.Radio(value=str(idx), label=opt))
+            
+            # FIX: Custom click handler for the wrapped row to prevent truncation
+            def make_click_handler(i):
+                def handle_click(e):
+                    if not exam_options.disabled:
+                        exam_options.value = str(i)
+                        page.update()
+                return handle_click
+
+            opt_row = ft.Container(
+                content=ft.Row([
+                    ft.Radio(value=str(idx)),
+                    ft.Text(opt, expand=True, size=15) # expand=True forces text to wrap cleanly!
+                ], vertical_alignment=ft.CrossAxisAlignment.START),
+                on_click=make_click_handler(idx),
+                border_radius=8,
+                padding=2,
+                cursor=ft.MouseCursor.CLICK
+            )
+            exam_options.content.controls.append(opt_row)
+
         exam_options.value = None
         page.update()
 
@@ -368,12 +385,10 @@ def main(page: ft.Page):
         user_ans = int(exam_options.value)
         exam_state["answers"][q_num] = user_ans
         
-        # Color Grid immediately
         exam_grid_controls[q_num - 1].bgcolor = ft.colors.PRIMARY 
         exam_grid_controls[q_num - 1].content.color = ft.colors.ON_PRIMARY
         exam_grid_controls[q_num - 1].border = None
         
-        # Process Instant Feedback
         data = exam_state["data"][q_num]
         correct_ans = data["answer_index"]
         is_correct = (user_ans == correct_ans)
@@ -390,7 +405,6 @@ def main(page: ft.Page):
             
         instant_feedback_view.controls.append(ft.Text(f"Explanation: {data['explanation']}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
         
-        # Toggle UI
         instant_feedback_view.visible = True
         exam_options.disabled = True
         submit_btn.visible = False
@@ -400,12 +414,11 @@ def main(page: ft.Page):
 
     def skip_exam_question(e):
         q_num = exam_state["current_q"]
-        exam_state["answers"][q_num] = None # Mark as skipped
+        exam_state["answers"][q_num] = None 
         
         exam_grid_controls[q_num - 1].bgcolor = ft.colors.SURFACE_VARIANT
         exam_grid_controls[q_num - 1].border = None
         
-        # Show correct answer anyway for learning
         data = exam_state["data"][q_num]
         correct_ans = data["answer_index"]
         
@@ -432,7 +445,7 @@ def main(page: ft.Page):
 
     def finish_exam(e):
         exam_state["active"] = False
-        left_exam_card.visible, right_exam_card.visible = False, False
+        exam_cards_row.visible = False # FIX: Hides the entire Row to remove the huge blank gap
         
         score = 0
         exam_explanation_view.controls.clear()
@@ -479,7 +492,7 @@ def main(page: ft.Page):
         exam_state.update({"active": True, "current_q": 1, "answers": {}, "data": {}, "time_left": 3000})
         
         exam_timer_text.color = ft.colors.PRIMARY
-        left_exam_card.visible, right_exam_card.visible = True, True
+        exam_cards_row.visible = True # FIX: Shows the row when starting test
         exam_explanation_view.visible = False
         
         for circle in exam_grid_controls: 
@@ -524,10 +537,13 @@ def main(page: ft.Page):
         )
     )
 
+    # FIX: Creating a variable for the Row so we can toggle its visibility to remove the gap
+    exam_cards_row = ft.Row([left_exam_card, right_exam_card], expand=True, vertical_alignment=ft.CrossAxisAlignment.START)
+
     exam_screen.content = ft.Column([
         ft.Row([ft.TextButton("← Exit Practice", on_click=lambda e: go_home(e)), ft.Text("Online Practice Session", size=22, weight="bold", color=ft.colors.PRIMARY)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         ft.Divider(),
-        ft.Row([left_exam_card, right_exam_card], expand=True, vertical_alignment=ft.CrossAxisAlignment.START),
+        exam_cards_row,
         exam_explanation_view
     ])
 
