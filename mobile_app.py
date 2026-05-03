@@ -291,7 +291,7 @@ def main(page: ft.Page):
             f.write("="*35 + "\n\n")
             
             for q_num, ans_idx in exam_state["answers"].items():
-                if ans_idx is None: continue # Skip ignored questions
+                if ans_idx is None: continue 
                 data = exam_state["data"].get(q_num)
                 if data:
                     correct_idx = data["answer_index"]
@@ -306,10 +306,11 @@ def main(page: ft.Page):
         page.launch_url(f"/exports/{filename}")
 
     # --- INSTANT FEEDBACK EXAM MODULE ---
-    exam_state = {"active": False, "current_q": 1, "total_q": 50, "answers": {}, "data": {}, "time_left": 3000} 
+    exam_state = {"active": False, "current_q": 1, "total_q": 50, "answers": {}, "data": {}, "time_left": 3000, "selected_option": None} 
     
     exam_question_text = ft.Text("Loading question...", size=18, weight="w500")
-    exam_options = ft.RadioGroup(content=ft.Column(spacing=15))
+    # FIX: Replaced RadioGroup with a simple Column
+    exam_options_column = ft.Column(spacing=10)
     exam_timer_text = ft.Text("50:00", size=32, weight="bold", color=ft.colors.PRIMARY)
     
     exam_grid_controls = []
@@ -336,11 +337,26 @@ def main(page: ft.Page):
         if exam_state["time_left"] <= 0 and exam_state["active"]:
             finish_exam(None)
 
+    def update_option_ui():
+        # Update the visual state of the custom radio buttons
+        for i, opt_container in enumerate(exam_options_column.controls):
+            icon = opt_container.content.controls[0]
+            if exam_state["selected_option"] == i:
+                icon.name = ft.icons.RADIO_BUTTON_CHECKED
+                icon.color = ft.colors.PRIMARY
+                opt_container.bgcolor = ft.colors.SURFACE_VARIANT
+            else:
+                icon.name = ft.icons.RADIO_BUTTON_UNCHECKED
+                icon.color = ft.colors.ON_SURFACE_VARIANT
+                opt_container.bgcolor = ft.colors.TRANSPARENT
+        page.update()
+
     def load_exam_question():
         exam_question_text.value = f"Q{exam_state['current_q']}: Fetching securely from syllabus..."
-        exam_options.content.controls.clear()
+        exam_options_column.controls.clear()
+        exam_state["selected_option"] = None
+        exam_options_column.disabled = False
         
-        exam_options.disabled = False
         instant_feedback_view.visible = False
         submit_btn.visible = True
         skip_btn.visible = True
@@ -354,35 +370,37 @@ def main(page: ft.Page):
         exam_state["data"][exam_state["current_q"]] = q_data
         exam_question_text.value = f"Q{exam_state['current_q']}. {q_data['question']}"
         
+        # FIX: Build robust, clickable rows that wrap text properly
         for idx, opt in enumerate(q_data["options"]):
-            
-            # FIX: Custom click handler for the wrapped row to prevent truncation
             def make_click_handler(i):
                 def handle_click(e):
-                    if not exam_options.disabled:
-                        exam_options.value = str(i)
-                        page.update()
+                    if not exam_options_column.disabled:
+                        exam_state["selected_option"] = i
+                        update_option_ui()
                 return handle_click
 
             opt_row = ft.Container(
                 content=ft.Row([
-                    ft.Radio(value=str(idx)),
-                    ft.Text(opt, expand=True, size=15) # expand=True forces text to wrap cleanly!
+                    ft.Icon(ft.icons.RADIO_BUTTON_UNCHECKED, color=ft.colors.ON_SURFACE_VARIANT, size=20),
+                    ft.Text(opt, expand=True, size=15)
                 ], vertical_alignment=ft.CrossAxisAlignment.START),
                 on_click=make_click_handler(idx),
                 border_radius=8,
-                padding=2,
-                cursor=ft.MouseCursor.CLICK
+                padding=10,
+                cursor=ft.MouseCursor.CLICK,
+                bgcolor=ft.colors.TRANSPARENT
             )
-            exam_options.content.controls.append(opt_row)
-
-        exam_options.value = None
+            exam_options_column.controls.append(opt_row)
+            
         page.update()
 
     def submit_exam_answer(e):
-        if exam_options.value is None: return
+        if exam_state["selected_option"] is None: 
+            show_feedback("Please select an option first.", ft.colors.ORANGE)
+            return
+            
         q_num = exam_state["current_q"]
-        user_ans = int(exam_options.value)
+        user_ans = exam_state["selected_option"]
         exam_state["answers"][q_num] = user_ans
         
         exam_grid_controls[q_num - 1].bgcolor = ft.colors.PRIMARY 
@@ -406,10 +424,18 @@ def main(page: ft.Page):
         instant_feedback_view.controls.append(ft.Text(f"Explanation: {data['explanation']}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
         
         instant_feedback_view.visible = True
-        exam_options.disabled = True
+        exam_options_column.disabled = True
         submit_btn.visible = False
         skip_btn.visible = False
         next_question_btn.visible = True
+        
+        # Visually highlight correct vs incorrect
+        for i, opt_container in enumerate(exam_options_column.controls):
+            if i == correct_ans:
+                opt_container.border = ft.border.all(2, ft.colors.GREEN)
+            elif i == user_ans and not is_correct:
+                opt_container.border = ft.border.all(2, ft.colors.ERROR)
+                
         page.update()
 
     def skip_exam_question(e):
@@ -429,10 +455,13 @@ def main(page: ft.Page):
         instant_feedback_view.controls.append(ft.Text(f"Explanation: {data['explanation']}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
         
         instant_feedback_view.visible = True
-        exam_options.disabled = True
+        exam_options_column.disabled = True
         submit_btn.visible = False
         skip_btn.visible = False
         next_question_btn.visible = True
+        
+        # Highlight correct answer
+        exam_options_column.controls[correct_ans].border = ft.border.all(2, ft.colors.GREEN)
         page.update()
         
     def next_exam_question(e):
@@ -445,7 +474,7 @@ def main(page: ft.Page):
 
     def finish_exam(e):
         exam_state["active"] = False
-        exam_cards_row.visible = False # FIX: Hides the entire Row to remove the huge blank gap
+        exam_cards_row.visible = False 
         
         score = 0
         exam_explanation_view.controls.clear()
@@ -489,10 +518,10 @@ def main(page: ft.Page):
     def start_exam_mode(e):
         if not is_subject_loaded(): return
         main_screen.visible, exam_screen.visible = False, True
-        exam_state.update({"active": True, "current_q": 1, "answers": {}, "data": {}, "time_left": 3000})
+        exam_state.update({"active": True, "current_q": 1, "answers": {}, "data": {}, "time_left": 3000, "selected_option": None})
         
         exam_timer_text.color = ft.colors.PRIMARY
-        exam_cards_row.visible = True # FIX: Shows the row when starting test
+        exam_cards_row.visible = True 
         exam_explanation_view.visible = False
         
         for circle in exam_grid_controls: 
@@ -514,7 +543,8 @@ def main(page: ft.Page):
         content=ft.Container(
             padding=30,
             content=ft.Column([
-                exam_question_text, ft.Divider(height=20, color=ft.colors.TRANSPARENT), exam_options,
+                exam_question_text, ft.Divider(height=20, color=ft.colors.TRANSPARENT), 
+                exam_options_column, # Replaced RadioGroup with custom Column
                 instant_feedback_view,
                 ft.Divider(height=20, color=ft.colors.TRANSPARENT),
                 ft.Row([
@@ -537,7 +567,6 @@ def main(page: ft.Page):
         )
     )
 
-    # FIX: Creating a variable for the Row so we can toggle its visibility to remove the gap
     exam_cards_row = ft.Row([left_exam_card, right_exam_card], expand=True, vertical_alignment=ft.CrossAxisAlignment.START)
 
     exam_screen.content = ft.Column([
