@@ -375,10 +375,8 @@ def main(page: ft.Page):
             next_question_btn.visible = False
             page.update()
             
-            # Fetch the question block
             q_data = fetch_practice_question(user_state["cached_syllabus_chunks"])
             
-            # Bulletproof extraction to prevent silent thread crashes
             if not q_data or not isinstance(q_data, dict):
                 q_data = {}
                 
@@ -394,7 +392,6 @@ def main(page: ft.Page):
             
             explanation = q_data.get("explanation") or q_data.get("Explanation") or "No explanation provided by AI."
             
-            # Save the clean safe data back to memory
             safe_data = {
                 "question": q_text,
                 "options": raw_options,
@@ -405,7 +402,7 @@ def main(page: ft.Page):
             exam_state["data"][exam_state["current_q"]] = safe_data
             exam_question_text.value = f"Q{exam_state['current_q']}. {safe_data['question']}"
             
-            # Build buttons safely
+            # --- FIX: Removed cursor=ft.MouseCursor.CLICK to prevent version crash ---
             for idx, opt in enumerate(safe_data["options"]):
                 def make_click_handler(i):
                     def handle_click(e):
@@ -422,7 +419,6 @@ def main(page: ft.Page):
                     on_click=make_click_handler(idx),
                     border_radius=8,
                     padding=10,
-                    cursor=ft.MouseCursor.CLICK,
                     bgcolor=ft.colors.TRANSPARENT
                 )
                 exam_options_column.controls.append(opt_row)
@@ -430,7 +426,6 @@ def main(page: ft.Page):
             page.update() 
             
         except Exception as e:
-            # Absolute worst case scenario, show the error instead of crashing
             exam_question_text.value = f"System Parsing Error: {str(e)}. Please click Skip."
             exam_options_column.controls.clear()
             page.update()
