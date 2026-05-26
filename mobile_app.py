@@ -110,10 +110,11 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
         recent_history = "".join(chat_history_list[-4:]) 
         history_context = f"\n--- RECENT CHAT HISTORY ---\n{recent_history}\n---------------------------\n"
         
+    # --- FIXED: Empowered the AI to use images actively ---
     image_instruction = ""
     available_images = CLOUD_DATA[current_subject_key]["available_images"] if current_subject_key else []
     if available_images:
-        image_instruction = f"\n\n--- LOCAL DIAGRAMS: {available_images} ---\n3. ONLY output exactly: [IMG: filename.png]\n"
+        image_instruction = f"\n\n--- AVAILABLE LOCAL DIAGRAMS: {available_images} ---\nCRITICAL: If any of these diagram filenames are relevant to your explanation, you MUST include it by typing EXACTLY: [IMG: filename.png] on its own line.\n"
 
     system_prompt = f"You are EduNex, an expert academic AI tutor.\n\nCONTEXT (Syllabus):\n{syllabus_context}"
     user_text_string = ""
@@ -262,7 +263,6 @@ def main(page: ft.Page):
                 except: pass
         threading.Thread(target=clear_text, daemon=True).start()
 
-    # --- DOWNLOAD EXPORTERS ---
     def download_chat_history(e):
         if not user_state["chat_history"]:
             show_feedback("Chat is empty!", ft.colors.ORANGE)
@@ -322,10 +322,7 @@ def main(page: ft.Page):
     exam_state = {"active": False, "current_q": 1, "total_q": 50, "answers": {}, "data": {}, "time_left": 3000, "selected_option": None} 
     
     exam_question_text = ft.Text("Loading question...", size=18, weight="w500")
-    
-    # FIX: Applying width directly to the Column perfectly bounds the options and solves RenderFlex crashes!
     exam_options_column = ft.Column(spacing=10, width=700) 
-    
     exam_timer_text = ft.Text("50:00", size=32, weight="bold", color=ft.colors.PRIMARY)
     
     exam_grid_controls = []
@@ -807,6 +804,21 @@ def main(page: ft.Page):
                         chunks = [resp_txt.text[i:i+1500] for i in range(0, len(resp_txt.text), 1500)]
                         user_state["cached_syllabus_chunks"] = chunks
                 except Exception: pass
+
+            # --- FIXED: Actively fetching the list of images from GitHub! ---
+            if CLOUD_DATA[selected_name].get("github_api_url"):
+                try:
+                    api_url = CLOUD_DATA[selected_name]["github_api_url"]
+                    if api_url:
+                        resp_img = requests.get(api_url, timeout=5)
+                        if resp_img.status_code == 200:
+                            files = resp_img.json()
+                            # Extracts only the image names 
+                            img_names = [f["name"] for f in files if f["name"].lower().endswith(('.png', '.jpg', '.jpeg'))]
+                            CLOUD_DATA[selected_name]["available_images"] = img_names
+                except Exception as e:
+                    pass
+
             show_feedback("Subject connected successfully!", ft.colors.GREEN)
 
         threading.Thread(target=fetch_cloud_data, daemon=True).start()
