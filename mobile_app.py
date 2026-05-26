@@ -26,7 +26,8 @@ load_dotenv()
 API_KEY = os.getenv("GITHUB_API_KEY") 
 MODEL_NAME = "gpt-4o-mini" 
 
-AZURE_API_URL = "https://models.inference.ai.azure.com/chat/completions".strip("[]'\" \n\r")
+# Clean URL assignment to prevent any bracket translation bugs
+AZURE_API_URL = "https://models.inference.ai.azure.com/chat/completions"
 
 CLOUD_DATA = {
     "Operating Systems (Theory)": {
@@ -113,7 +114,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
     image_instruction = ""
     available_images = CLOUD_DATA[current_subject_key]["available_images"] if current_subject_key else []
     if available_images:
-        image_instruction = f"\n\n--- AVAILABLE LOCAL DIAGRAMS: {available_images} ---\nCRITICAL: If any of these diagram filenames are relevant to your explanation, you MUST include it by typing EXACTLY: [IMG: filename.png] on its own line. Do not try to draw the architecture yourself.\n"
+        image_instruction = f"\n\n--- AVAILABLE LOCAL DIAGRAMS: {available_images} ---\nCRITICAL SYSTEM REQUIREMENT: If any of these exact diagram filenames match the system architecture requested, you MUST place it on its own blank line wrapped precisely like this: [IMG: filename.png]\n"
 
     system_prompt = f"You are EduNex, an expert academic AI tutor.\n\nCONTEXT (Syllabus):\n{syllabus_context}"
     user_text_string = ""
@@ -126,8 +127,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
             has_image = True
             image_list.append({"type": "image_url", "image_url": {"url": f"data:{f_obj['inline_data']['mime_type']};base64,{f_obj['inline_data']['data']}"}})
 
-    # --- FIX: Banned ASCII diagrams to force real graphical image usage ---
-    concise_rule = "CRITICAL: Be extremely concise. Use plain text formatting. DO NOT use LaTeX. ABSOLUTELY DO NOT draw ASCII charts, text-based block diagrams, or layout trees using characters (like +, -, |, v). Explanations must be written strictly in clear paragraphs, referencing the provided image filenames instead."
+    concise_rule = "CRITICAL: Be extremely concise. Use plain text formatting. DO NOT use LaTeX. ABSOLUTELY FORBIDDEN to create text-based flowcharts, block diagrams, or tree layouts using characters (such as +, -, |, v). You must write strictly in structured text paragraphs, and output the image tag [IMG: filename.png] on its own line if relevant diagrams exist."
 
     if is_quiz_mode: user_text_string += f"\n\nTASK: Generate 10 varied MCQs. Add Answer Key. {concise_rule}"
     elif is_viva_mode: user_text_string += f"\n\nTASK: Generate 15 Viva questions as 'Q: ' and 'A: '. {concise_rule}"
@@ -146,11 +146,13 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
     payload = {
         "model": MODEL_NAME,
         "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message_content}],
-        "temperature": 0.7 
+        "temperature": 0.4 
     }
 
     try:
-        response = requests.post(AZURE_API_URL, headers=headers, json=payload, timeout=(10.0, 30.0))
+        # Secure variable passing to guarantee no invalid character artifacts parse into requests
+        url_target = str(AZURE_API_URL).strip()
+        response = requests.post(url_target, headers=headers, json=payload, timeout=(10.0, 30.0))
         if response.status_code == 200:
             result = response.json()
             if 'choices' in result and len(result['choices']) > 0: return result['choices'][0]['message']['content']
@@ -185,7 +187,8 @@ def fetch_practice_question(cached_syllabus_chunks):
     payload = {"model": MODEL_NAME, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}], "temperature": 0.8}
 
     try:
-        resp = requests.post(AZURE_API_URL, headers=headers, json=payload, timeout=15.0)
+        url_target = str(AZURE_API_URL).strip()
+        resp = requests.post(url_target, headers=headers, json=payload, timeout=15.0)
         if resp.status_code == 200:
             raw_content = resp.json()['choices'][0]['message']['content']
             return extract_safe_json(raw_content)
@@ -542,7 +545,7 @@ def main(page: ft.Page):
                             ft.Row([ft.Text(f"Question {i}", weight="bold", color=ft.colors.PRIMARY), ft.Text(status_text, color=status_color, weight="bold")]),
                             ft.Text(data.get('question', ''), size=15),
                             ft.Text(f"Correct Answer: {correct_text}", italic=True, color=ft.colors.ON_SURFACE_VARIANT),
-                            ft.Divider(height=10, color=ft.colors.TRANREXT),
+                            ft.Divider(height=10, color=ft.colors.TRANSPARENT),
                             ft.Text(f"Explanation: {data.get('explanation', '')}", color=ft.colors.ON_SURFACE_VARIANT)
                         ])
                     )
