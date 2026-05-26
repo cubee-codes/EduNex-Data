@@ -110,11 +110,10 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
         recent_history = "".join(chat_history_list[-4:]) 
         history_context = f"\n--- RECENT CHAT HISTORY ---\n{recent_history}\n---------------------------\n"
         
-    # --- FIXED: Empowered the AI to use images actively ---
     image_instruction = ""
     available_images = CLOUD_DATA[current_subject_key]["available_images"] if current_subject_key else []
     if available_images:
-        image_instruction = f"\n\n--- AVAILABLE LOCAL DIAGRAMS: {available_images} ---\nCRITICAL: If any of these diagram filenames are relevant to your explanation, you MUST include it by typing EXACTLY: [IMG: filename.png] on its own line.\n"
+        image_instruction = f"\n\n--- AVAILABLE LOCAL DIAGRAMS: {available_images} ---\nCRITICAL: If any of these diagram filenames are relevant to your explanation, you MUST include it by typing EXACTLY: [IMG: filename.png] on its own line. Do not try to draw the architecture yourself.\n"
 
     system_prompt = f"You are EduNex, an expert academic AI tutor.\n\nCONTEXT (Syllabus):\n{syllabus_context}"
     user_text_string = ""
@@ -127,7 +126,8 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
             has_image = True
             image_list.append({"type": "image_url", "image_url": {"url": f"data:{f_obj['inline_data']['mime_type']};base64,{f_obj['inline_data']['data']}"}})
 
-    concise_rule = "CRITICAL: Be extremely concise. Use plain text formatting. DO NOT use LaTeX."
+    # --- FIX: Banned ASCII diagrams to force real graphical image usage ---
+    concise_rule = "CRITICAL: Be extremely concise. Use plain text formatting. DO NOT use LaTeX. ABSOLUTELY DO NOT draw ASCII charts, text-based block diagrams, or layout trees using characters (like +, -, |, v). Explanations must be written strictly in clear paragraphs, referencing the provided image filenames instead."
 
     if is_quiz_mode: user_text_string += f"\n\nTASK: Generate 10 varied MCQs. Add Answer Key. {concise_rule}"
     elif is_viva_mode: user_text_string += f"\n\nTASK: Generate 15 Viva questions as 'Q: ' and 'A: '. {concise_rule}"
@@ -263,6 +263,7 @@ def main(page: ft.Page):
                 except: pass
         threading.Thread(target=clear_text, daemon=True).start()
 
+    # --- DOWNLOAD EXPORTERS ---
     def download_chat_history(e):
         if not user_state["chat_history"]:
             show_feedback("Chat is empty!", ft.colors.ORANGE)
@@ -541,7 +542,7 @@ def main(page: ft.Page):
                             ft.Row([ft.Text(f"Question {i}", weight="bold", color=ft.colors.PRIMARY), ft.Text(status_text, color=status_color, weight="bold")]),
                             ft.Text(data.get('question', ''), size=15),
                             ft.Text(f"Correct Answer: {correct_text}", italic=True, color=ft.colors.ON_SURFACE_VARIANT),
-                            ft.Divider(height=10, color=ft.colors.TRANSPARENT),
+                            ft.Divider(height=10, color=ft.colors.TRANREXT),
                             ft.Text(f"Explanation: {data.get('explanation', '')}", color=ft.colors.ON_SURFACE_VARIANT)
                         ])
                     )
@@ -805,7 +806,6 @@ def main(page: ft.Page):
                         user_state["cached_syllabus_chunks"] = chunks
                 except Exception: pass
 
-            # --- FIXED: Actively fetching the list of images from GitHub! ---
             if CLOUD_DATA[selected_name].get("github_api_url"):
                 try:
                     api_url = CLOUD_DATA[selected_name]["github_api_url"]
@@ -813,7 +813,6 @@ def main(page: ft.Page):
                         resp_img = requests.get(api_url, timeout=5)
                         if resp_img.status_code == 200:
                             files = resp_img.json()
-                            # Extracts only the image names 
                             img_names = [f["name"] for f in files if f["name"].lower().endswith(('.png', '.jpg', '.jpeg'))]
                             CLOUD_DATA[selected_name]["available_images"] = img_names
                 except Exception as e:
