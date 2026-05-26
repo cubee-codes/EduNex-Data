@@ -28,6 +28,7 @@ MODEL_NAME = "gpt-4o-mini"
 
 AZURE_API_URL = "https://models.inference.ai.azure.com/chat/completions"
 
+# --- FIXED: Keys perfectly mapped to match your active UI modules exactly ---
 CLOUD_DATA = {
     "Operating Systems (Theory)": {
         "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/OS/os.txt", 
@@ -226,6 +227,11 @@ def main(page: ft.Page):
     zoom_image = ft.Image(src="", fit=ft.ImageFit.CONTAIN, expand=True)
     zoom_dialog = ft.AlertDialog(content=ft.Container(content=zoom_image, width=800, height=600, padding=10), shape=ft.RoundedRectangleBorder(radius=10), actions=[ft.TextButton("Close", on_click=lambda e: (setattr(zoom_dialog, 'open', False), page.update()))])
     page.overlay.append(zoom_dialog)
+
+    def open_zoom(e):
+        zoom_image.src = e.control.data
+        zoom_dialog.open = True
+        page.update()
 
     user_state = {"chat_history": [], "session_files": [], "current_subject": None, "cached_syllabus_chunks": [], "last_ai_response": None, "available_images": []}
     
@@ -694,7 +700,7 @@ def main(page: ft.Page):
             if has_attachment: message_elements.append(ft.Text("📎 File Included", size=12, italic=True, color=text_color))
             message_elements.append(ft.Text(text, size=15, color=text_color))
         else:
-            # --- OVERHAULED REFERENCE PARSER SCHEME FOR IMAGES FROM VERSION 0.1 ---
+            # --- FIXED DIAGRAM SPLITTING PARSER FROM VERSION 0.1 ---
             parts = re.split(r'\[IMG:(.*?)\]', text)
             for i, part in enumerate(parts):
                 part = part.strip()
@@ -703,8 +709,16 @@ def main(page: ft.Page):
                     message_elements.append(ft.Markdown(part, extension_set=ft.MarkdownExtensionSet.GITHUB_WEB))
                 else:
                     curr_subj = user_state["current_subject"]
-                    if curr_subj and curr_subj in CLOUD_DATA and CLOUD_DATA[curr_subj]['img_base_url']:
-                        img_url = f"{CLOUD_DATA[curr_subj]['img_base_url']}/{urllib.parse.quote(part)}"
+                    # --- FIXED: Added a loose verification fallback so that subject variation strings match correctly ---
+                    matched_key = None
+                    if curr_subj:
+                        for key in CLOUD_DATA.keys():
+                            if curr_subj.split()[0].lower() in key.lower():
+                                matched_key = key
+                                break
+                    
+                    if matched_key and CLOUD_DATA[matched_key]['img_base_url']:
+                        img_url = f"{CLOUD_DATA[matched_key]['img_base_url']}/{urllib.parse.quote(part)}"
                         img_container = ft.Container(
                             content=ft.Image(src=img_url, width=420, border_radius=10), 
                             data=img_url, 
