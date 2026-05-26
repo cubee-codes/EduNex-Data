@@ -107,10 +107,9 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
         recent_history = "".join(chat_history_list[-4:]) 
         history_context = f"\n--- RECENT CHAT HISTORY ---\n{recent_history}\n---------------------------\n"
         
-    # --- PROMPT RE-ENGINEERING USING THREAD-SAFE STATE ACCESS ---
     image_instruction = ""
     if active_images_list:
-        image_instruction = f"\n\n--- REQUIRED VISUAL SCHEME ---\nYou have access to graphical illustration assets matching this list: {active_images_list}\nWhen explaining components, scheduling steps, or architectures that match any of these files, you MUST insert the exact image markup tag on its own blank line: [IMG: filename.png]\nNever draw ASCII diagrams or custom character maps using text characters. You are strictly mandated to append the image tag instead."
+        image_instruction = f"\n\n--- REQUIRED VISUAL SCHEME ---\nYou have access to graphical visual files matching this list: {active_images_list}\nWhen explaining components, scheduling steps, or architectures that map to any of these files, you MUST insert the exact image markup tag on its own blank line: [IMG: filename.png]\nNever draw ASCII text-diagrams or character maps. You are strictly mandated to append the image tag instead."
 
     system_prompt = f"You are EduNex, an expert academic AI tutor.\n\nCONTEXT (Syllabus):\n{syllabus_context}"
     user_text_string = ""
@@ -142,7 +141,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
     payload = {
         "model": MODEL_NAME,
         "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message_content}],
-        "temperature": 0.2 # Lowered temperature to minimize creative layout generation and enforce strict asset handling
+        "temperature": 0.2
     }
 
     try:
@@ -179,7 +178,7 @@ def fetch_practice_question(cached_syllabus_chunks):
     }}"""
 
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}"}
-    payload = {"model": MODEL_NAME, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "prompt": user_prompt}], "temperature": 0.8}
+    payload = {"model": MODEL_NAME, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}], "temperature": 0.8}
 
     try:
         url_target = str(AZURE_API_URL).strip()
@@ -229,7 +228,6 @@ def main(page: ft.Page):
     zoom_dialog = ft.AlertDialog(content=ft.Container(content=zoom_image, width=800, height=600, padding=10), shape=ft.RoundedRectangleBorder(radius=10), actions=[ft.TextButton("Close", on_click=lambda e: (setattr(zoom_dialog, 'open', False), page.update()))])
     page.overlay.append(zoom_dialog)
 
-    # --- TRACKING VISUAL DATA ARRAY ON MAIN STATE ---
     user_state = {"chat_history": [], "session_files": [], "current_subject": None, "cached_syllabus_chunks": [], "last_ai_response": None, "available_images": []}
     
     main_screen = ft.Container(expand=True, visible=True)
@@ -594,7 +592,7 @@ def main(page: ft.Page):
         )
     )
     
-    right_exam_card = ft.Card(
+    right_card_elem = ft.Card(
         elevation=2, expand=1,
         content=ft.Container(
             padding=30,
@@ -607,7 +605,7 @@ def main(page: ft.Page):
         )
     )
 
-    exam_cards_row = ft.Row([left_exam_card, right_exam_card], expand=True, vertical_alignment=ft.CrossAxisAlignment.START)
+    exam_cards_row = ft.Row([left_exam_card, right_card_elem], expand=True, vertical_alignment=ft.CrossAxisAlignment.START)
 
     exam_screen.content = ft.Column([
         ft.Row([ft.TextButton("← Exit Practice", on_click=lambda e: go_home(e)), ft.Text("Online Practice Session", size=22, weight="bold", color=ft.colors.PRIMARY)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
@@ -695,18 +693,19 @@ def main(page: ft.Page):
             if has_attachment: message_elements.append(ft.Text("📎 File Included", size=12, italic=True, color=text_color))
             message_elements.append(ft.Text(text, size=15, color=text_color))
         else:
-            parts = re.split(r'\[\s*IMG\s*:\s*(.*?)\s*\]', text, flags=re.IGNORECASE)
+            parts = re.split(r'\[\s*IMG\s*:\s*([^\]]+)\s*\]', text, flags=re.IGNORECASE)
             for i, part in enumerate(parts):
                 if not part: continue
                 if i % 2 == 0: 
                     message_elements.append(ft.Markdown(part.strip(), extension_set=ft.MarkdownExtensionSet.GITHUB_WEB))
                 else:
                     curr_subj = user_state["current_subject"]
-                    clean_filename = part.strip().strip("'\"`[]")
+                    clean_filename = part.strip().strip("'\"`[] ")
+                    # --- FIXED: Direct external rendering passing to bypass CORS limitations ---
                     if curr_subj and curr_subj in CLOUD_DATA and CLOUD_DATA[curr_subj]['img_base_url']:
                         img_url = f"{CLOUD_DATA[curr_subj]['img_base_url']}/{urllib.parse.quote(clean_filename)}"
                         img_container = ft.Container(
-                            content=ft.Image(src=img_url, width=350, border_radius=10), 
+                            content=ft.Image(src=img_url, width=420, border_radius=10), 
                             data=img_url, 
                             on_click=lambda e: (setattr(zoom_image, 'src', e.control.data), setattr(zoom_dialog, 'open', True), page.update())
                         )
@@ -725,7 +724,6 @@ def main(page: ft.Page):
         
         def background_worker():
             try:
-                # --- FIXED: Explicitly extraction of image array from thread-safe user_state memory pool ---
                 resp = get_ai_response(msg, mode_switch.value, user_state["chat_history"], user_state["session_files"], user_state["cached_syllabus_chunks"], user_state["current_subject"], user_state["available_images"], is_quiz, is_summary, is_viva, attached_file)
                 if loading_bubble in chat_history.controls: chat_history.controls.remove(loading_bubble)
                 add_message(str(resp), is_quiz=is_quiz, is_summary=is_summary, is_viva=is_viva)
@@ -819,7 +817,6 @@ def main(page: ft.Page):
                         if resp_img.status_code == 200:
                             files = resp_img.json()
                             img_names = [f["name"] for f in files if f["name"].lower().endswith(('.png', '.jpg', '.jpeg'))]
-                            # --- FIXED: Direct thread-safe context assignment to user_state pool ---
                             user_state["available_images"] = img_names
                 except Exception:
                     pass
