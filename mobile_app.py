@@ -33,21 +33,18 @@ CLOUD_DATA = {
         "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/OS/os.txt", 
         "img_base_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/OS/images", 
         "github_api_url": "https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/OS/images",
-        "available_images": [],
         "is_online": False
     },
     "Software Testing (Theory)": {
         "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt", 
         "img_base_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/SFT/images", 
         "github_api_url": "https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/SFT/images",
-        "available_images": [],
         "is_online": False
     },
     "Emerging Trends in IT (Online Exam)": {
         "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister6/ETI/eti.txt", 
         "img_base_url": "", 
         "github_api_url": "",
-        "available_images": [],
         "is_online": True 
     }
 }
@@ -78,7 +75,7 @@ def fast_search_syllabus(query, chunks, top_k=5, randomize_if_empty=False):
 # ---------------------------------------------------------
 # 3. AI TRANSLATION LAYER
 # ---------------------------------------------------------
-def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, cached_syllabus_chunks, current_subject_key, is_quiz_mode=False, is_summary_mode=False, is_viva_mode=False, attached_file_path=None):
+def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, cached_syllabus_chunks, current_subject_key, active_images_list, is_quiz_mode=False, is_summary_mode=False, is_viva_mode=False, attached_file_path=None):
     if not API_KEY: return "❌ CRITICAL ERROR: GITHUB_API_KEY missing."
         
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}"}
@@ -110,11 +107,10 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
         recent_history = "".join(chat_history_list[-4:]) 
         history_context = f"\n--- RECENT CHAT HISTORY ---\n{recent_history}\n---------------------------\n"
         
-    # --- FORTIFIED DICTIONARY OVERHAUL FOR MULTIMODAL INJECTION ---
+    # --- PROMPT RE-ENGINEERING USING THREAD-SAFE STATE ACCESS ---
     image_instruction = ""
-    available_images = CLOUD_DATA[current_subject_key]["available_images"] if current_subject_key else []
-    if available_images:
-        image_instruction = f"\n\n--- REQUIRED IMAGE INJECTION SCHEME ---\nYou have access to graphical visual files matching this verified dataset list: {available_images}\nWhen the user explicitly requests an illustration, diagram, map, flowchart or layout of a concept, or if you explain a system architecture that maps to one of these files, you MUST insert the exact code block tag on its own line: [IMG: filename.png]\nNever tell the user you cannot display, render or access images. You are explicitly authorized to use the exact string layout tags specified above."
+    if active_images_list:
+        image_instruction = f"\n\n--- REQUIRED VISUAL SCHEME ---\nYou have access to graphical illustration assets matching this list: {active_images_list}\nWhen explaining components, scheduling steps, or architectures that match any of these files, you MUST insert the exact image markup tag on its own blank line: [IMG: filename.png]\nNever draw ASCII diagrams or custom character maps using text characters. You are strictly mandated to append the image tag instead."
 
     system_prompt = f"You are EduNex, an expert academic AI tutor.\n\nCONTEXT (Syllabus):\n{syllabus_context}"
     user_text_string = ""
@@ -127,7 +123,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
             has_image = True
             image_list.append({"type": "image_url", "image_url": {"url": f"data:{f_obj['inline_data']['mime_type']};base64,{f_obj['inline_data']['data']}"}})
 
-    concise_rule = "CRITICAL: Be extremely concise. Use plain text formatting. DO NOT use LaTeX. ABSOLUTELY FORBIDDEN to map out ASCII structural flowcharts, custom character trees, or text block layouts using symbols (such as +, -, |, v). You must convey architecture via normal paragraphs combined with the verified image injection tags."
+    concise_rule = "CRITICAL: Be extremely concise. Use plain text formatting. DO NOT use LaTeX. YOU ARE STRONGLY PROHIBITED from drawing text flowcharts or structural layouts via characters (such as +, -, |, v). All architectures must be presented via written paragraphs paired with the image tag injection system."
 
     if is_quiz_mode: user_text_string += f"\n\nTASK: Generate 10 varied MCQs. Add Answer Key. {concise_rule}"
     elif is_viva_mode: user_text_string += f"\n\nTASK: Generate 15 Viva questions as 'Q: ' and 'A: '. {concise_rule}"
@@ -146,7 +142,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
     payload = {
         "model": MODEL_NAME,
         "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message_content}],
-        "temperature": 0.3 
+        "temperature": 0.2 # Lowered temperature to minimize creative layout generation and enforce strict asset handling
     }
 
     try:
@@ -183,7 +179,7 @@ def fetch_practice_question(cached_syllabus_chunks):
     }}"""
 
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}"}
-    payload = {"model": MODEL_NAME, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}], "temperature": 0.8}
+    payload = {"model": MODEL_NAME, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "prompt": user_prompt}], "temperature": 0.8}
 
     try:
         url_target = str(AZURE_API_URL).strip()
@@ -233,7 +229,8 @@ def main(page: ft.Page):
     zoom_dialog = ft.AlertDialog(content=ft.Container(content=zoom_image, width=800, height=600, padding=10), shape=ft.RoundedRectangleBorder(radius=10), actions=[ft.TextButton("Close", on_click=lambda e: (setattr(zoom_dialog, 'open', False), page.update()))])
     page.overlay.append(zoom_dialog)
 
-    user_state = {"chat_history": [], "session_files": [], "current_subject": None, "cached_syllabus_chunks": [], "last_ai_response": None}
+    # --- TRACKING VISUAL DATA ARRAY ON MAIN STATE ---
+    user_state = {"chat_history": [], "session_files": [], "current_subject": None, "cached_syllabus_chunks": [], "last_ai_response": None, "available_images": []}
     
     main_screen = ft.Container(expand=True, visible=True)
     settings_screen = ft.Container(expand=True, visible=False)
@@ -265,7 +262,6 @@ def main(page: ft.Page):
                 except: pass
         threading.Thread(target=clear_text, daemon=True).start()
 
-    # --- DOWNLOAD EXPORTERS ---
     def download_chat_history(e):
         if not user_state["chat_history"]:
             show_feedback("Chat is empty!", ft.colors.ORANGE)
@@ -699,7 +695,6 @@ def main(page: ft.Page):
             if has_attachment: message_elements.append(ft.Text("📎 File Included", size=12, italic=True, color=text_color))
             message_elements.append(ft.Text(text, size=15, color=text_color))
         else:
-            # --- UPGRADED REGEX PARSER: Strips white spaces and formatting tags safely ---
             parts = re.split(r'\[\s*IMG\s*:\s*(.*?)\s*\]', text, flags=re.IGNORECASE)
             for i, part in enumerate(parts):
                 if not part: continue
@@ -730,7 +725,8 @@ def main(page: ft.Page):
         
         def background_worker():
             try:
-                resp = get_ai_response(msg, mode_switch.value, user_state["chat_history"], user_state["session_files"], user_state["cached_syllabus_chunks"], user_state["current_subject"], is_quiz, is_summary, is_viva, attached_file)
+                # --- FIXED: Explicitly extraction of image array from thread-safe user_state memory pool ---
+                resp = get_ai_response(msg, mode_switch.value, user_state["chat_history"], user_state["session_files"], user_state["cached_syllabus_chunks"], user_state["current_subject"], user_state["available_images"], is_quiz, is_summary, is_viva, attached_file)
                 if loading_bubble in chat_history.controls: chat_history.controls.remove(loading_bubble)
                 add_message(str(resp), is_quiz=is_quiz, is_summary=is_summary, is_viva=is_viva)
             except Exception as e:
@@ -823,7 +819,8 @@ def main(page: ft.Page):
                         if resp_img.status_code == 200:
                             files = resp_img.json()
                             img_names = [f["name"] for f in files if f["name"].lower().endswith(('.png', '.jpg', '.jpeg'))]
-                            CLOUD_DATA[selected_name]["available_images"] = img_names
+                            # --- FIXED: Direct thread-safe context assignment to user_state pool ---
+                            user_state["available_images"] = img_names
                 except Exception:
                     pass
 
