@@ -26,26 +26,29 @@ load_dotenv()
 API_KEY = os.getenv("GITHUB_API_KEY") 
 MODEL_NAME = "gpt-4o-mini" 
 
-AZURE_API_URL = "https://models.inference.ai.azure.com/chat/completions"
+# Bulletproof URL to prevent copy-paste artifacts
+AZURE_API_URL = "https://models.inference.ai.azure.com/chat/completions".strip("[]'\" \n\r")
 
-# --- FIXED: Keys perfectly mapped to match your active UI modules exactly ---
 CLOUD_DATA = {
     "Operating Systems (Theory)": {
         "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/OS/os.txt", 
         "img_base_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/OS/images", 
         "github_api_url": "https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/OS/images",
+        "available_images": [],
         "is_online": False
     },
     "Software Testing (Theory)": {
         "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/refs/heads/main/semister5/SFT/sft.txt", 
         "img_base_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister5/SFT/images", 
         "github_api_url": "https://api.github.com/repos/cubee-codes/EduNex-Data/contents/semister5/SFT/images",
+        "available_images": [],
         "is_online": False
     },
     "Emerging Trends in IT (Online Exam)": {
         "txt_url": "https://raw.githubusercontent.com/cubee-codes/EduNex-Data/main/semister6/ETI/eti.txt", 
         "img_base_url": "", 
         "github_api_url": "",
+        "available_images": [],
         "is_online": True 
     }
 }
@@ -76,7 +79,7 @@ def fast_search_syllabus(query, chunks, top_k=5, randomize_if_empty=False):
 # ---------------------------------------------------------
 # 3. AI TRANSLATION LAYER
 # ---------------------------------------------------------
-def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, cached_syllabus_chunks, current_subject_key, active_images_list, is_quiz_mode=False, is_summary_mode=False, is_viva_mode=False, attached_file_path=None):
+def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, cached_syllabus_chunks, current_subject_key, is_quiz_mode=False, is_summary_mode=False, is_viva_mode=False, attached_file_path=None):
     if not API_KEY: return "❌ CRITICAL ERROR: GITHUB_API_KEY missing."
         
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}"}
@@ -109,8 +112,9 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
         history_context = f"\n--- RECENT CHAT HISTORY ---\n{recent_history}\n---------------------------\n"
         
     image_instruction = ""
-    if active_images_list:
-        image_instruction = f"\n\n--- LOCAL DIAGRAMS AVAILABLE: {active_images_list} ---\nCRITICAL INSTRUCTIONS FOR DIAGRAMS:\n1. You MUST use these exact filenames when explaining topics related to them.\n2. ABSOLUTELY NO ASCII ART OR TEXT DIAGRAMS.\n3. ONLY output this EXACT tag where the diagram should go: [IMG: filename.png]\n----------------------------------\n"
+    available_images = CLOUD_DATA[current_subject_key]["available_images"] if current_subject_key else []
+    if available_images:
+        image_instruction = f"\n\n--- LOCAL DIAGRAMS: {available_images} ---\n3. ONLY output exactly: [IMG: filename.png]\n"
 
     system_prompt = f"You are EduNex, an expert academic AI tutor.\n\nCONTEXT (Syllabus):\n{syllabus_context}"
     user_text_string = ""
@@ -123,7 +127,7 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
             has_image = True
             image_list.append({"type": "image_url", "image_url": {"url": f"data:{f_obj['inline_data']['mime_type']};base64,{f_obj['inline_data']['data']}"}})
 
-    concise_rule = "CRITICAL: Be extremely concise. Use plain text formatting. DO NOT use LaTeX. You are strictly forbidden from drawing ASCII charts or character blocks."
+    concise_rule = "CRITICAL: Be extremely concise. Use plain text formatting. DO NOT use LaTeX."
 
     if is_quiz_mode: user_text_string += f"\n\nTASK: Generate 10 varied MCQs. Add Answer Key. {concise_rule}"
     elif is_viva_mode: user_text_string += f"\n\nTASK: Generate 15 Viva questions as 'Q: ' and 'A: '. {concise_rule}"
@@ -142,27 +146,16 @@ def get_ai_response(user_input, is_exam_mode, chat_history_list, session_files, 
     payload = {
         "model": MODEL_NAME,
         "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message_content}],
-        "temperature": 0.2
+        "temperature": 0.7 
     }
 
     try:
-        url_target = str(AZURE_API_URL).strip()
-        response = requests.post(url_target, headers=headers, json=payload, timeout=(10.0, 30.0))
+        response = requests.post(AZURE_API_URL, headers=headers, json=payload, timeout=(10.0, 30.0))
         if response.status_code == 200:
             result = response.json()
             if 'choices' in result and len(result['choices']) > 0: return result['choices'][0]['message']['content']
         return f"❌ API Error {response.status_code}"
     except Exception as e: return f"Error: {str(e)}"
-
-def extract_safe_json(raw_content):
-    try:
-        start = raw_content.find('{')
-        end = raw_content.rfind('}') + 1
-        if start != -1 and end != 0:
-            return json.loads(raw_content[start:end])
-        return None
-    except:
-        return None
 
 def fetch_practice_question(cached_syllabus_chunks):
     syllabus_context = fast_search_syllabus("", cached_syllabus_chunks, top_k=6, randomize_if_empty=True)
@@ -182,20 +175,21 @@ def fetch_practice_question(cached_syllabus_chunks):
     payload = {"model": MODEL_NAME, "messages": [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}], "temperature": 0.8}
 
     try:
-        url_target = str(AZURE_API_URL).strip()
-        resp = requests.post(url_target, headers=headers, json=payload, timeout=15.0)
+        resp = requests.post(AZURE_API_URL, headers=headers, json=payload, timeout=15.0)
         if resp.status_code == 200:
             raw_content = resp.json()['choices'][0]['message']['content']
-            return extract_safe_json(raw_content)
+            clean_json = re.sub(r'```(?:json)?', '', raw_content).strip()
+            return json.loads(clean_json)
     except Exception as e:
         print("JSON Fetch Error:", e)
-    return None
+        return None
 
 # ---------------------------------------------------------
 # 4. THE APP UI
 # ---------------------------------------------------------
 def main(page: ft.Page):
     page.title = "EduNex Premium"
+    
     page.theme = ft.Theme(color_scheme_seed=ft.colors.DEEP_PURPLE)
     page.dark_theme = ft.Theme(color_scheme_seed=ft.colors.DEEP_PURPLE)
     page.theme_mode = ft.ThemeMode.DARK 
@@ -205,7 +199,7 @@ def main(page: ft.Page):
         expand=True, 
         gradient=ft.LinearGradient(
             begin=ft.Alignment(-1, -1), end=ft.Alignment(1, 1), 
-            colors=["#0D1117", "#161B22", "#0D1117"] 
+            colors=["#0A0612", "#130D26", "#0A0612"] 
         )
     )
 
@@ -218,7 +212,7 @@ def main(page: ft.Page):
             page.theme_mode = ft.ThemeMode.DARK
             premium_background.bgcolor = None
             premium_background.gradient = ft.LinearGradient(
-                begin=ft.Alignment(-1, -1), end=ft.Alignment(1, 1), colors=["#0D1117", "#161B22", "#0D1117"]
+                begin=ft.Alignment(-1, -1), end=ft.Alignment(1, 1), colors=["#0A0612", "#130D26", "#0A0612"]
             )
         page.update()
 
@@ -228,12 +222,7 @@ def main(page: ft.Page):
     zoom_dialog = ft.AlertDialog(content=ft.Container(content=zoom_image, width=800, height=600, padding=10), shape=ft.RoundedRectangleBorder(radius=10), actions=[ft.TextButton("Close", on_click=lambda e: (setattr(zoom_dialog, 'open', False), page.update()))])
     page.overlay.append(zoom_dialog)
 
-    def open_zoom(e):
-        zoom_image.src = e.control.data
-        zoom_dialog.open = True
-        page.update()
-
-    user_state = {"chat_history": [], "session_files": [], "current_subject": None, "cached_syllabus_chunks": [], "last_ai_response": None, "available_images": []}
+    user_state = {"chat_history": [], "session_files": [], "current_subject": None, "cached_syllabus_chunks": [], "last_ai_response": None}
     
     main_screen = ft.Container(expand=True, visible=True)
     settings_screen = ft.Container(expand=True, visible=False)
@@ -265,6 +254,7 @@ def main(page: ft.Page):
                 except: pass
         threading.Thread(target=clear_text, daemon=True).start()
 
+    # --- DOWNLOAD EXPORTERS ---
     def download_chat_history(e):
         if not user_state["chat_history"]:
             show_feedback("Chat is empty!", ft.colors.ORANGE)
@@ -302,29 +292,24 @@ def main(page: ft.Page):
             f.write("="*35 + "\n\n")
             
             for q_num, ans_idx in exam_state["answers"].items():
-                if ans_idx is None: continue 
                 data = exam_state["data"].get(q_num)
                 if data:
-                    correct_idx = data.get("answer_index", 0)
+                    correct_idx = data["answer_index"]
                     f.write(f"Question {q_num}: {data['question']}\n")
                     for i, opt in enumerate(data['options']):
                         f.write(f"   {chr(65+i)}) {opt}\n")
-                    
-                    if 0 <= ans_idx < len(data['options']):
-                        f.write(f"\nYour Answer:    {chr(65+ans_idx)}) {data['options'][ans_idx]}\n")
-                    if 0 <= correct_idx < len(data['options']):
-                        f.write(f"Correct Answer: {chr(65+correct_idx)}) {data['options'][correct_idx]}\n")
-                        
-                    f.write(f"Explanation:    {data.get('explanation', '')}\n")
+                    f.write(f"\nYour Answer:    {chr(65+ans_idx)}) {data['options'][ans_idx]}\n")
+                    f.write(f"Correct Answer: {chr(65+correct_idx)}) {data['options'][correct_idx]}\n")
+                    f.write(f"Explanation:    {data['explanation']}\n")
                     f.write("-" * 50 + "\n\n")
                     
         page.launch_url(f"/exports/{filename}")
 
-    # --- INSTANT FEEDBACK EXAM MODULE ---
-    exam_state = {"active": False, "current_q": 1, "total_q": 50, "answers": {}, "data": {}, "time_left": 3000, "selected_option": None} 
+    # --- EXAM MODULE ---
+    exam_state = {"active": False, "current_q": 1, "total_q": 50, "answers": {}, "data": {}, "time_left": 3000} 
     
     exam_question_text = ft.Text("Loading question...", size=18, weight="w500")
-    exam_options_column = ft.Column(spacing=10, width=700) 
+    exam_options = ft.RadioGroup(content=ft.Column(spacing=15))
     exam_timer_text = ft.Text("50:00", size=32, weight="bold", color=ft.colors.PRIMARY)
     
     exam_grid_controls = []
@@ -334,7 +319,6 @@ def main(page: ft.Page):
     exam_grid = ft.Row(controls=exam_grid_controls, wrap=True, width=280, spacing=8, run_spacing=8)
 
     exam_explanation_view = ft.ListView(expand=True, visible=False, padding=20)
-    instant_feedback_view = ft.Column(visible=False, spacing=10)
 
     def format_time(seconds):
         mins, secs = divmod(seconds, 60)
@@ -351,171 +335,48 @@ def main(page: ft.Page):
         if exam_state["time_left"] <= 0 and exam_state["active"]:
             finish_exam(None)
 
-    def update_option_ui():
-        for i, opt_container in enumerate(exam_options_column.controls):
-            icon = opt_container.content.controls[0]
-            if exam_state["selected_option"] == i:
-                icon.name = ft.icons.RADIO_BUTTON_CHECKED
-                icon.color = ft.colors.PRIMARY
-                opt_container.bgcolor = ft.colors.SURFACE_VARIANT
-            else:
-                icon.name = ft.icons.RADIO_BUTTON_UNCHECKED
-                icon.color = ft.colors.ON_SURFACE_VARIANT
-                opt_container.bgcolor = ft.colors.TRANSPARENT
+    def load_exam_question():
+        exam_question_text.value = f"Q{exam_state['current_q']}: Fetching securely from syllabus..."
+        exam_options.content.controls.clear()
+        page.update()
+        
+        q_data = fetch_practice_question(user_state["cached_syllabus_chunks"])
+        if not q_data:
+            q_data = {"question": "Network Error fetching question. Please Skip.", "options": ["Error", "Error", "Error", "Error"], "answer_index": 0, "explanation": "Failed to load due to API timeout."}
+        
+        exam_state["data"][exam_state["current_q"]] = q_data
+        exam_question_text.value = f"Q{exam_state['current_q']}. {q_data['question']}"
+        
+        for idx, opt in enumerate(q_data["options"]):
+            exam_options.content.controls.append(ft.Radio(value=str(idx), label=opt))
+        exam_options.value = None
         page.update()
 
-    def load_exam_question():
-        try:
-            exam_question_text.value = f"Q{exam_state['current_q']}: Fetching securely from syllabus..."
-            exam_options_column.controls.clear()
-            exam_state["selected_option"] = None
-            exam_options_column.disabled = False
-            
-            instant_feedback_view.visible = False
-            submit_btn.visible = True
-            skip_btn.visible = True
-            next_question_btn.visible = False
-            page.update()
-            
-            q_data = fetch_practice_question(user_state["cached_syllabus_chunks"])
-            
-            if not q_data or not isinstance(q_data, dict):
-                q_data = {}
-                
-            q_text = q_data.get("question") or q_data.get("Question") or q_data.get("QUESTION") or "Network error fetching question. Please click Skip."
-            
-            raw_options = q_data.get("options") or q_data.get("Options") or q_data.get("choices") or q_data.get("Choices") or []
-            if not isinstance(raw_options, list) or len(raw_options) == 0:
-                raw_options = ["Error loading option A", "Error loading option B", "Error loading option C", "Error loading option D"]
-                
-            raw_ans = q_data.get("answer_index") or q_data.get("Answer_Index") or q_data.get("answer") or 0
-            if isinstance(raw_ans, str) and raw_ans.isdigit(): raw_ans = int(raw_ans)
-            if not isinstance(raw_ans, int): raw_ans = 0
-            
-            explanation = q_data.get("explanation") or q_data.get("Explanation") or "No explanation provided by AI."
-            
-            safe_data = {
-                "question": q_text,
-                "options": raw_options,
-                "answer_index": raw_ans,
-                "explanation": explanation
-            }
-            
-            exam_state["data"][exam_state["current_q"]] = safe_data
-            exam_question_text.value = f"Q{exam_state['current_q']}. {safe_data['question']}"
-            
-            for idx, opt in enumerate(safe_data["options"]):
-                def make_click_handler(i):
-                    def handle_click(e):
-                        if not exam_options_column.disabled:
-                            exam_state["selected_option"] = i
-                            update_option_ui()
-                    return handle_click
-
-                opt_row = ft.Container(
-                    content=ft.Row([
-                        ft.Icon(ft.icons.RADIO_BUTTON_UNCHECKED, color=ft.colors.ON_SURFACE_VARIANT, size=20),
-                        ft.Text(str(opt), expand=True, size=15)
-                    ], vertical_alignment=ft.CrossAxisAlignment.START),
-                    on_click=make_click_handler(idx),
-                    border_radius=8,
-                    padding=10,
-                    bgcolor=ft.colors.TRANSPARENT
-                )
-                exam_options_column.controls.append(opt_row)
-                
-            page.update() 
-            
-        except Exception as e:
-            exam_question_text.value = f"System Error: Could not render options. Please click Skip."
-            exam_options_column.controls.clear()
-            page.update()
-
     def submit_exam_answer(e):
-        if exam_state["selected_option"] is None: 
-            show_feedback("Please select an option first.", ft.colors.ORANGE)
-            return
-            
+        if exam_options.value is None: return
         q_num = exam_state["current_q"]
-        user_ans = exam_state["selected_option"]
-        exam_state["answers"][q_num] = user_ans
-        
+        exam_state["answers"][q_num] = int(exam_options.value)
         exam_grid_controls[q_num - 1].bgcolor = ft.colors.PRIMARY 
         exam_grid_controls[q_num - 1].content.color = ft.colors.ON_PRIMARY
         exam_grid_controls[q_num - 1].border = None
         
-        data = exam_state["data"].get(q_num, {})
-        correct_ans = data.get("answer_index", 0)
-        is_correct = (user_ans == correct_ans)
-        
-        status_color = ft.colors.GREEN if is_correct else ft.colors.ERROR
-        status_text = "✅ Correct!" if is_correct else "❌ Incorrect"
-        
-        instant_feedback_view.controls.clear()
-        instant_feedback_view.controls.append(ft.Divider(height=20, color=ft.colors.TRANSPARENT))
-        instant_feedback_view.controls.append(ft.Text(status_text, size=18, weight="bold", color=status_color))
-        
-        if not is_correct:
-            if 0 <= correct_ans < len(data.get('options', [])):
-                instant_feedback_view.controls.append(ft.Text(f"Correct Answer: {data['options'][correct_ans]}", weight="bold", color=ft.colors.GREEN))
-            
-        instant_feedback_view.controls.append(ft.Text(f"Explanation: {data.get('explanation', '')}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
-        
-        instant_feedback_view.visible = True
-        exam_options_column.disabled = True
-        submit_btn.visible = False
-        skip_btn.visible = False
-        next_question_btn.visible = True
-        
-        for i, opt_container in enumerate(exam_options_column.controls):
-            if i == correct_ans:
-                opt_container.border = ft.border.all(2, ft.colors.GREEN)
-            elif i == user_ans and not is_correct:
-                opt_container.border = ft.border.all(2, ft.colors.ERROR)
-                
-        page.update()
-
-    def skip_exam_question(e):
-        q_num = exam_state["current_q"]
-        exam_state["answers"][q_num] = None 
-        
-        exam_grid_controls[q_num - 1].bgcolor = ft.colors.SURFACE_VARIANT
-        exam_grid_controls[q_num - 1].border = None
-        
-        data = exam_state["data"].get(q_num, {})
-        correct_ans = data.get("answer_index", 0)
-        
-        instant_feedback_view.controls.clear()
-        instant_feedback_view.controls.append(ft.Divider(height=20, color=ft.colors.TRANSPARENT))
-        instant_feedback_view.controls.append(ft.Text("⏭️ Skipped", size=18, weight="bold", color=ft.colors.ORANGE))
-        
-        if 0 <= correct_ans < len(data.get('options', [])):
-            instant_feedback_view.controls.append(ft.Text(f"Correct Answer: {data['options'][correct_ans]}", weight="bold", color=ft.colors.GREEN))
-            
-        instant_feedback_view.controls.append(ft.Text(f"Explanation: {data.get('explanation', '')}", italic=True, color=ft.colors.ON_SURFACE_VARIANT))
-        
-        instant_feedback_view.visible = True
-        exam_options_column.disabled = True
-        submit_btn.visible = False
-        skip_btn.visible = False
-        next_question_btn.visible = True
-        
-        if 0 <= correct_ans < len(exam_options_column.controls):
-            exam_options_column.controls[correct_ans].border = ft.border.all(2, ft.colors.GREEN)
-            
-        page.update()
-        
-    def next_exam_question(e):
-        q_num = exam_state["current_q"]
         if q_num < exam_state["total_q"]:
             exam_state["current_q"] += 1
             load_exam_question()
-        else: 
-            finish_exam(None)
+        else: finish_exam(None)
+
+    def skip_exam_question(e):
+        q_num = exam_state["current_q"]
+        exam_grid_controls[q_num - 1].bgcolor = ft.colors.SURFACE_VARIANT
+        exam_grid_controls[q_num - 1].border = None
+        if q_num < exam_state["total_q"]:
+            exam_state["current_q"] += 1
+            load_exam_question()
+        else: finish_exam(None)
 
     def finish_exam(e):
         exam_state["active"] = False
-        exam_cards_row.visible = False 
+        left_exam_card.visible, right_exam_card.visible = False, False
         
         score = 0
         exam_explanation_view.controls.clear()
@@ -525,14 +386,12 @@ def main(page: ft.Page):
             if i not in exam_state["data"]: continue
             data = exam_state["data"][i]
             user_ans = exam_state["answers"].get(i)
-            correct_ans = data.get("answer_index", 0)
+            correct_ans = data["answer_index"]
             is_correct = (user_ans == correct_ans)
             if is_correct: score += 1
             
             status_color = ft.colors.GREEN if is_correct else ft.colors.ERROR
             status_text = "Correct" if is_correct else ("Skipped" if user_ans is None else "Incorrect")
-            
-            correct_text = data['options'][correct_ans] if 0 <= correct_ans < len(data.get('options', [])) else "Unknown"
             
             exam_explanation_view.controls.append(
                 ft.Card(
@@ -541,15 +400,16 @@ def main(page: ft.Page):
                         padding=20,
                         content=ft.Column([
                             ft.Row([ft.Text(f"Question {i}", weight="bold", color=ft.colors.PRIMARY), ft.Text(status_text, color=status_color, weight="bold")]),
-                            ft.Text(data.get('question', ''), size=15),
-                            ft.Text(f"Correct Answer: {correct_text}", italic=True, color=ft.colors.ON_SURFACE_VARIANT),
+                            ft.Text(data['question'], size=15),
+                            ft.Text(f"Correct Answer: {data['options'][correct_ans]}", italic=True, color=ft.colors.ON_SURFACE_VARIANT),
                             ft.Divider(height=10, color=ft.colors.TRANSPARENT),
-                            ft.Text(f"Explanation: {data.get('explanation', '')}", color=ft.colors.ON_SURFACE_VARIANT)
+                            ft.Text(f"Explanation: {data['explanation']}", color=ft.colors.ON_SURFACE_VARIANT)
                         ])
                     )
                 )
             )
             
+        # Add Final Score & Download Button
         exam_explanation_view.controls.insert(1, ft.Row([
             ft.Text(f"Final Score: {score} / {exam_state['total_q']}", size=20, weight="bold"),
             ft.ElevatedButton("📥 Download Solved Q&A", on_click=download_solved_mcqs, style=ft.ButtonStyle(bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY))
@@ -561,10 +421,10 @@ def main(page: ft.Page):
     def start_exam_mode(e):
         if not is_subject_loaded(): return
         main_screen.visible, exam_screen.visible = False, True
-        exam_state.update({"active": True, "current_q": 1, "answers": {}, "data": {}, "time_left": 3000, "selected_option": None})
+        exam_state.update({"active": True, "current_q": 1, "answers": {}, "data": {}, "time_left": 3000})
         
         exam_timer_text.color = ft.colors.PRIMARY
-        exam_cards_row.visible = True 
+        left_exam_card.visible, right_exam_card.visible = True, True
         exam_explanation_view.visible = False
         
         for circle in exam_grid_controls: 
@@ -576,28 +436,23 @@ def main(page: ft.Page):
         threading.Thread(target=timer_thread, daemon=True).start()
         threading.Thread(target=load_exam_question, daemon=True).start()
 
-    submit_btn = ft.ElevatedButton("Submit Answer", on_click=submit_exam_answer, style=ft.ButtonStyle(bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY, shape=ft.RoundedRectangleBorder(radius=8)))
-    skip_btn = ft.OutlinedButton("Skip Question", on_click=skip_exam_question, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)))
-    next_question_btn = ft.ElevatedButton("Next Question ➡", on_click=next_exam_question, visible=False, style=ft.ButtonStyle(bgcolor=ft.colors.GREEN_600, color=ft.colors.WHITE, shape=ft.RoundedRectangleBorder(radius=8)))
-    end_test_btn = ft.TextButton("End Test Early", on_click=finish_exam, style=ft.ButtonStyle(color=ft.colors.ERROR))
-
     left_exam_card = ft.Card(
         elevation=2, expand=2,
         content=ft.Container(
             padding=30,
             content=ft.Column([
-                exam_question_text, ft.Divider(height=20, color=ft.colors.TRANSPARENT), 
-                exam_options_column, 
-                instant_feedback_view,
-                ft.Divider(height=20, color=ft.colors.TRANSPARENT),
+                exam_question_text, ft.Divider(height=20, color=ft.colors.TRANSPARENT), exam_options, ft.Divider(height=20, color=ft.colors.TRANSPARENT),
                 ft.Row([
-                    submit_btn, skip_btn, next_question_btn, ft.Container(expand=True), end_test_btn
+                    ft.ElevatedButton("Submit Answer", on_click=submit_exam_answer, style=ft.ButtonStyle(bgcolor=ft.colors.PRIMARY, color=ft.colors.ON_PRIMARY, shape=ft.RoundedRectangleBorder(radius=8))),
+                    ft.OutlinedButton("Skip Question", on_click=skip_exam_question, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))),
+                    ft.Container(expand=True),
+                    ft.TextButton("End Test Early", on_click=finish_exam, style=ft.ButtonStyle(color=ft.colors.ERROR))
                 ])
             ])
         )
     )
     
-    right_card_elem = ft.Card(
+    right_exam_card = ft.Card(
         elevation=2, expand=1,
         content=ft.Container(
             padding=30,
@@ -610,12 +465,10 @@ def main(page: ft.Page):
         )
     )
 
-    exam_cards_row = ft.Row([left_exam_card, right_card_elem], expand=True, vertical_alignment=ft.CrossAxisAlignment.START)
-
     exam_screen.content = ft.Column([
         ft.Row([ft.TextButton("← Exit Practice", on_click=lambda e: go_home(e)), ft.Text("Online Practice Session", size=22, weight="bold", color=ft.colors.PRIMARY)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
         ft.Divider(),
-        exam_cards_row,
+        ft.Row([left_exam_card, right_exam_card], expand=True, vertical_alignment=ft.CrossAxisAlignment.START),
         exam_explanation_view
     ])
 
@@ -626,9 +479,7 @@ def main(page: ft.Page):
     def cancel_upload(e):
         nonlocal active_attachment_path
         active_attachment_path = None
-        attachment_indicator.visible = False
-        chat_box.disabled = False
-        send_button.disabled = False
+        attachment_indicator.visible, chat_box.disabled, send_button.disabled = False, False, False
         show_feedback("Upload cancelled.", ft.colors.ERROR)
         page.update()
 
@@ -700,30 +551,15 @@ def main(page: ft.Page):
             if has_attachment: message_elements.append(ft.Text("📎 File Included", size=12, italic=True, color=text_color))
             message_elements.append(ft.Text(text, size=15, color=text_color))
         else:
-            # --- FIXED DIAGRAM SPLITTING PARSER FROM VERSION 0.1 ---
             parts = re.split(r'\[IMG:(.*?)\]', text)
             for i, part in enumerate(parts):
                 part = part.strip()
                 if not part: continue
-                if i % 2 == 0: 
-                    message_elements.append(ft.Markdown(part, extension_set=ft.MarkdownExtensionSet.GITHUB_WEB))
+                if i % 2 == 0: message_elements.append(ft.Markdown(part, extension_set=ft.MarkdownExtensionSet.GITHUB_WEB))
                 else:
                     curr_subj = user_state["current_subject"]
-                    # --- FIXED: Added a loose verification fallback so that subject variation strings match correctly ---
-                    matched_key = None
-                    if curr_subj:
-                        for key in CLOUD_DATA.keys():
-                            if curr_subj.split()[0].lower() in key.lower():
-                                matched_key = key
-                                break
-                    
-                    if matched_key and CLOUD_DATA[matched_key]['img_base_url']:
-                        img_url = f"{CLOUD_DATA[matched_key]['img_base_url']}/{urllib.parse.quote(part)}"
-                        img_container = ft.Container(
-                            content=ft.Image(src=img_url, width=420, border_radius=10), 
-                            data=img_url, 
-                            on_click=open_zoom
-                        )
+                    if curr_subj and curr_subj in CLOUD_DATA:
+                        img_container = ft.Container(content=ft.Image(src=f"{CLOUD_DATA[curr_subj]['img_base_url']}/{urllib.parse.quote(part)}", width=350, border_radius=10), data=f"{CLOUD_DATA[curr_subj]['img_base_url']}/{urllib.parse.quote(part)}", on_click=lambda e: (setattr(zoom_image, 'src', e.control.data), setattr(zoom_dialog, 'open', True), page.update()))
                         message_elements.append(ft.Row([img_container], alignment=ft.MainAxisAlignment.CENTER))
 
         bubble = ft.Container(content=ft.Column(message_elements, spacing=10), bgcolor=bg_color, padding=15, border_radius=12, expand=True)
@@ -732,23 +568,21 @@ def main(page: ft.Page):
         page.update()
 
     def execute_ai_task(msg, attached_file, is_quiz=False, is_summary=False, is_viva=False):
-        chat_box.disabled = True
-        send_button.disabled = True
+        chat_box.disabled, send_button.disabled = True, True
         loading_bubble = ft.Container(content=ft.Row([ft.ProgressRing(width=16, height=16), ft.Text(" Analyzing syllabus...", italic=True)]), padding=15)
         chat_history.controls.append(loading_bubble)
         page.update()
         
         def background_worker():
             try:
-                resp = get_ai_response(msg, mode_switch.value, user_state["chat_history"], user_state["session_files"], user_state["cached_syllabus_chunks"], user_state["current_subject"], user_state["available_images"], is_quiz, is_summary, is_viva, attached_file)
+                resp = get_ai_response(msg, mode_switch.value, user_state["chat_history"], user_state["session_files"], user_state["cached_syllabus_chunks"], user_state["current_subject"], is_quiz, is_summary, is_viva, attached_file)
                 if loading_bubble in chat_history.controls: chat_history.controls.remove(loading_bubble)
                 add_message(str(resp), is_quiz=is_quiz, is_summary=is_summary, is_viva=is_viva)
             except Exception as e:
                 if loading_bubble in chat_history.controls: chat_history.controls.remove(loading_bubble)
                 show_feedback(f"System Fault: {str(e)}", ft.colors.ERROR)
             finally:
-                chat_box.disabled = False
-                send_button.disabled = False
+                chat_box.disabled, send_button.disabled = False, False
                 page.update()
         threading.Thread(target=background_worker, daemon=True).start()
 
@@ -806,14 +640,12 @@ def main(page: ft.Page):
         
         if CLOUD_DATA[selected_name].get("is_online", False):
             action_buttons_container.content = online_buttons
-            chat_box.disabled = False
-            send_button.disabled = False
+            chat_box.disabled, send_button.disabled = False, False
             chat_box.hint_text = "Message EduNex (Practice Mode)..."
             cheat_sheet_container.visible = False
         else:
             action_buttons_container.content = theory_buttons
-            chat_box.disabled = False
-            send_button.disabled = False
+            chat_box.disabled, send_button.disabled = False, False
             chat_box.hint_text = "Message EduNex..."
             cheat_sheet_container.visible = True
             
@@ -827,19 +659,6 @@ def main(page: ft.Page):
                         chunks = [resp_txt.text[i:i+1500] for i in range(0, len(resp_txt.text), 1500)]
                         user_state["cached_syllabus_chunks"] = chunks
                 except Exception: pass
-
-            if CLOUD_DATA[selected_name].get("github_api_url"):
-                try:
-                    api_url = CLOUD_DATA[selected_name]["github_api_url"]
-                    if api_url:
-                        resp_img = requests.get(api_url, timeout=5)
-                        if resp_img.status_code == 200:
-                            files = resp_img.json()
-                            img_names = [f["name"] for f in files if f["name"].lower().endswith(('.png', '.jpg', '.jpeg'))]
-                            user_state["available_images"] = img_names
-                except Exception:
-                    pass
-
             show_feedback("Subject connected successfully!", ft.colors.GREEN)
 
         threading.Thread(target=fetch_cloud_data, daemon=True).start()
@@ -899,3 +718,4 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8550))
     print(f"🌍 Starting EduNex Enterprise on port {port}...")
     ft.app(target=main, view="web_browser", port=port, host="0.0.0.0", assets_dir=ASSETS_DIR, upload_dir=UPLOADS_DIR)
+ 
